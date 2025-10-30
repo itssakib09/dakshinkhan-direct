@@ -1,7 +1,7 @@
 function Home() {
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-4">Home – Dakshinkhan Direct Website</h1>
+      <h1 className="text-4xl font-bold mb-4">Home – Dakshinkhan Direct Web</h1>
       <p className="text-gray-600">
         Welcome to Dakshinkhan Direct - Your local business directory.
       </p>
