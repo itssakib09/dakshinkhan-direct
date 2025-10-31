@@ -152,18 +152,20 @@ function Signup() {
       setLoading(true)
 
       // Normalize phone number
-      const normalizedPhone = normalizePhoneBD(phone)
+const normalizedPhone = normalizePhoneBD(phone)
 
-      // Sign up with Firebase
-      await signUp(email, password, name)
+// Sign up with Firebase and create Firestore document
+await signUp(email, password, name, {
+  phone: normalizedPhone,
+  role: role
+})
 
-      // TODO: Save role and phone to database (we'll do this later with Firestore)
-      console.log('User registered:', {
-        name,
-        email,
-        phone: normalizedPhone,
-        role
-      })
+console.log('✅ User registered with Firestore profile:', {
+  name,
+  email,
+  phone: normalizedPhone,
+  role
+})
 
       navigate('/dashboard')
     } catch (error) {

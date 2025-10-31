@@ -1,3 +1,4 @@
+import { createUserProfile } from '../services/userService'
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
@@ -26,23 +27,31 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   // Sign up with email and password
-  async function signUp(email, password, displayName) {
-    console.log('🔵 SignUp attempt:', { email, displayName })
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password)
-      
-      // Update profile with display name
-      if (displayName) {
-        await updateProfile(result.user, { displayName })
-      }
-      
-      console.log('✅ SignUp successful:', result.user.email)
-      return result
-    } catch (error) {
-      console.error('❌ SignUp error:', error.message)
-      throw error
+async function signUp(email, password, displayName, additionalData = {}) {
+  console.log('🔵 SignUp attempt:', { email, displayName })
+  try {
+    // Create Firebase Auth user
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    
+    // Update profile with display name
+    if (displayName) {
+      await updateProfile(result.user, { displayName })
     }
+    
+    // Create Firestore user document
+    await createUserProfile(result.user.uid, {
+      email: result.user.email,
+      displayName: displayName || '',
+      ...additionalData
+    })
+    
+    console.log('✅ SignUp successful:', result.user.email)
+    return result
+  } catch (error) {
+    console.error('❌ SignUp error:', error.message)
+    throw error
   }
+}
 
   // Sign in with email and password
   async function signIn(email, password) {
@@ -58,18 +67,32 @@ export function AuthProvider({ children }) {
   }
 
   // Sign in with Google
-  async function signInWithGoogle() {
-    console.log('🔵 Google SignIn attempt')
-    try {
-      const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
-      console.log('✅ Google SignIn successful:', result.user.email)
-      return result
-    } catch (error) {
-      console.error('❌ Google SignIn error:', error.message)
-      throw error
+async function signInWithGoogle() {
+  console.log('🔵 Google SignIn attempt')
+  try {
+    const provider = new GoogleAuthProvider()
+    const result = await signInWithPopup(auth, provider)
+    
+    // Check if user document exists, if not create it
+    const { getUserProfile } = await import('../services/userService')
+    const existingProfile = await getUserProfile(result.user.uid)
+    
+    if (!existingProfile) {
+      await createUserProfile(result.user.uid, {
+        email: result.user.email,
+        displayName: result.user.displayName || '',
+        photoURL: result.user.photoURL || '',
+        role: 'customer'
+      })
     }
+    
+    console.log('✅ Google SignIn successful:', result.user.email)
+    return result
+  } catch (error) {
+    console.error('❌ Google SignIn error:', error.message)
+    throw error
   }
+}
 
   // Sign out
   async function logout() {
