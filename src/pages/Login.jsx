@@ -12,32 +12,70 @@ function Login() {
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
-    e.preventDefault()
+  e.preventDefault()
+  
+  try {
+    setError('')
+    setLoading(true)
     
-    try {
-      setError('')
-      setLoading(true)
-      await signIn(email, password)
+    console.log('=== STARTING LOGIN ===')
+    await signIn(email, password)
+    console.log('=== LOGIN SUCCESS - NAVIGATING ===')
+    
+    setTimeout(() => {
       navigate('/dashboard')
-    } catch (error) {
-      setError('Failed to sign in: ' + error.message)
-    } finally {
-      setLoading(false)
+    }, 500)
+    
+  } catch (error) {
+    console.error('=== LOGIN ERROR ===')
+    
+    let errorMessage = 'Failed to sign in. '
+    
+    if (error.code === 'auth/user-not-found') {
+      errorMessage = 'No account found with this email.'
+    } else if (error.code === 'auth/wrong-password') {
+      errorMessage = 'Incorrect password.'
+    } else if (error.code === 'auth/invalid-credential') {
+      errorMessage = 'Invalid email or password.'
+    } else {
+      errorMessage += error.message
     }
+    
+    setError(errorMessage)
+  } finally {
+    setLoading(false)
   }
+}
 
   async function handleGoogleSignIn() {
-    try {
-      setError('')
-      setLoading(true)
-      await signInWithGoogle()
+  try {
+    setError('')
+    setLoading(true)
+    
+    console.log('=== STARTING GOOGLE SIGNIN ===')
+    await signInWithGoogle()
+    console.log('=== GOOGLE SIGNIN SUCCESS ===')
+    
+    setTimeout(() => {
       navigate('/dashboard')
-    } catch (error) {
-      setError('Failed to sign in with Google: ' + error.message)
-    } finally {
-      setLoading(false)
+    }, 500)
+    
+  } catch (error) {
+    console.error('=== GOOGLE SIGNIN ERROR ===')
+    
+    let errorMessage = 'Failed to sign in with Google. '
+    
+    if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'Sign-in cancelled.'
+    } else {
+      errorMessage += error.message
     }
+    
+    setError(errorMessage)
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="max-w-md mx-auto">

@@ -139,55 +139,95 @@ function Signup() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
+  e.preventDefault()
 
-    // Validate all fields
-    if (!validateAll()) {
-      setError('Please fix the errors before submitting')
-      return
-    }
-
-    try {
-      setError('')
-      setLoading(true)
-
-      // Normalize phone number
-const normalizedPhone = normalizePhoneBD(phone)
-
-// Sign up with Firebase and create Firestore document
-await signUp(email, password, name, {
-  phone: normalizedPhone,
-  role: role
-})
-
-console.log('✅ User registered with Firestore profile:', {
-  name,
-  email,
-  phone: normalizedPhone,
-  role
-})
-
-      navigate('/dashboard')
-    } catch (error) {
-      console.error('Signup error:', error)
-      setError(error.message || 'Failed to create account')
-    } finally {
-      setLoading(false)
-    }
+  // Validate all fields
+  if (!validateAll()) {
+    setError('Please fix the errors before submitting')
+    return
   }
+
+  try {
+    setError('') // Clear any previous errors
+    setLoading(true)
+
+    console.log('=== STARTING SIGNUP PROCESS ===')
+    
+    // Normalize phone number
+    const normalizedPhone = normalizePhoneBD(phone)
+    console.log('Normalized phone:', normalizedPhone)
+
+    // Sign up with Firebase and create Firestore document
+    await signUp(email, password, name, {
+      phone: normalizedPhone,
+      role: role
+    })
+
+    console.log('=== SIGNUP SUCCESS - NAVIGATING TO DASHBOARD ===')
+    
+    // Small delay to ensure everything completes
+    setTimeout(() => {
+      navigate('/dashboard')
+    }, 500)
+
+  } catch (error) {
+    console.error('=== SIGNUP ERROR ===')
+    console.error('Error:', error)
+    
+    // Show user-friendly error message
+    let errorMessage = 'Failed to create account. '
+    
+    if (error.code === 'auth/email-already-in-use') {
+      errorMessage = 'This email is already registered. Please login instead.'
+    } else if (error.code === 'auth/weak-password') {
+      errorMessage = 'Password is too weak. Please use a stronger password.'
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Invalid email address.'
+    } else if (error.code === 'permission-denied') {
+      errorMessage = 'Database permission error. Please contact support.'
+    } else {
+      errorMessage += error.message
+    }
+    
+    setError(errorMessage)
+  } finally {
+    setLoading(false)
+  }
+}
 
   async function handleGoogleSignIn() {
-    try {
-      setError('')
-      setLoading(true)
-      await signInWithGoogle()
+  try {
+    setError('')
+    setLoading(true)
+    
+    console.log('=== STARTING GOOGLE SIGNIN ===')
+    await signInWithGoogle()
+    console.log('=== GOOGLE SIGNIN SUCCESS - NAVIGATING ===')
+    
+    // Small delay to ensure everything completes
+    setTimeout(() => {
       navigate('/dashboard')
-    } catch (error) {
-      setError('Failed to sign in with Google: ' + error.message)
-    } finally {
-      setLoading(false)
+    }, 500)
+    
+  } catch (error) {
+    console.error('=== GOOGLE SIGNIN ERROR ===')
+    console.error('Error:', error)
+    
+    let errorMessage = 'Failed to sign in with Google. '
+    
+    if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'Sign-in cancelled. Please try again.'
+    } else if (error.code === 'permission-denied') {
+      errorMessage = 'Database permission error. Please contact support.'
+    } else {
+      errorMessage += error.message
     }
+    
+    setError(errorMessage)
+  } finally {
+    setLoading(false)
   }
+}
 
   const passwordStrength = checkPasswordStrength(password)
 

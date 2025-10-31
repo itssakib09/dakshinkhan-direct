@@ -27,92 +27,88 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   // Sign up with email and password
-// Sign up with email and password
 async function signUp(email, password, displayName, additionalData = {}) {
-  console.log('🔵 SignUp attempt:', { email, displayName, additionalData })
+  console.log('🔵 Starting signup process...')
+  console.log('Email:', email)
+  console.log('Display Name:', displayName)
+  console.log('Additional Data:', additionalData)
+  
   try {
-    // Step 1: Create Firebase Auth user
+    // Step 1: Create Auth User
+    console.log('Step 1: Creating Firebase Auth user...')
     const result = await createUserWithEmailAndPassword(auth, email, password)
-    console.log('✅ Auth user created:', result.user.uid)
+    console.log('✅ Auth user created with UID:', result.user.uid)
     
-    // Step 2: Update display name
+    // Step 2: Update Display Name
     if (displayName) {
+      console.log('Step 2: Updating display name...')
       await updateProfile(result.user, { displayName })
       console.log('✅ Display name updated')
     }
     
-    // Step 3: Create Firestore document
-    await createUserProfile(result.user.uid, {
+    // Step 3: Create Firestore Document
+    console.log('Step 3: Creating Firestore document...')
+    const firestoreData = {
       email: result.user.email,
       displayName: displayName || '',
       phone: additionalData.phone || '',
       role: additionalData.role || 'customer',
       photoURL: ''
-    })
+    }
+    console.log('Firestore data to save:', firestoreData)
     
-    console.log('✅ SignUp complete!')
+    await createUserProfile(result.user.uid, firestoreData)
+    console.log('✅ Firestore document created')
+    
+    console.log('🎉 SIGNUP COMPLETE!')
     return result
+    
   } catch (error) {
-    console.error('❌ SignUp error:', error.message)
+    console.error('❌ SIGNUP FAILED!')
+    console.error('Error code:', error.code)
+    console.error('Error message:', error.message)
+    console.error('Full error:', error)
     throw error
   }
 }
 
-  // Sign in with email and password
-  async function signIn(email, password) {
-    console.log('🔵 SignIn attempt:', email)
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      console.log('✅ SignIn successful:', result.user.email)
-      return result
-    } catch (error) {
-      console.error('❌ SignIn error:', error.message)
-      throw error
-    }
-  }
-
-  // Sign in with Google
+ 
 // Sign in with Google
 async function signInWithGoogle() {
-  console.log('🔵 Google SignIn attempt')
+  console.log('🔵 Starting Google sign-in...')
+  
   try {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
-    console.log('✅ Google auth successful:', result.user.uid)
+    console.log('✅ Google auth successful, UID:', result.user.uid)
     
-    // Check if user document exists
+    // Check if user profile exists
+    console.log('Checking if Firestore profile exists...')
     const existingProfile = await getUserProfile(result.user.uid)
     
     if (!existingProfile) {
-      console.log('📝 Creating new Firestore profile for Google user')
+      console.log('No profile found, creating new one...')
       await createUserProfile(result.user.uid, {
         email: result.user.email,
         displayName: result.user.displayName || '',
         photoURL: result.user.photoURL || '',
         role: 'customer'
       })
+      console.log('✅ New profile created')
     } else {
-      console.log('✅ Existing profile found, skipping creation')
+      console.log('✅ Existing profile found')
     }
     
+    console.log('🎉 GOOGLE SIGNIN COMPLETE!')
     return result
+    
   } catch (error) {
-    console.error('❌ Google SignIn error:', error.message)
+    console.error('❌ GOOGLE SIGNIN FAILED!')
+    console.error('Error code:', error.code)
+    console.error('Error message:', error.message)
     throw error
   }
 }
-
-  // Sign out
-  async function logout() {
-    console.log('🔵 Logout attempt')
-    try {
-      await signOut(auth)
-      console.log('✅ Logout successful')
-    } catch (error) {
-      console.error('❌ Logout error:', error.message)
-      throw error
-    }
-  }
 
   // Listen to auth state changes
   useEffect(() => {
