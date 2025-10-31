@@ -6,11 +6,13 @@ import { db } from '../firebase/config'
  */
 export async function createUserProfile(uid, userData) {
   try {
+    console.log('📝 Creating Firestore profile for:', uid)
+    
     const userRef = doc(db, 'users', uid)
     
     const userProfile = {
-      uid,
-      email: userData.email,
+      uid: uid,
+      email: userData.email || '',
       displayName: userData.displayName || '',
       phone: userData.phone || '',
       role: userData.role || 'customer',
@@ -22,10 +24,12 @@ export async function createUserProfile(uid, userData) {
 
     await setDoc(userRef, userProfile)
     
-    console.log('✅ User profile created in Firestore:', uid)
+    console.log('✅ Firestore profile created successfully!')
+    console.log('Profile data:', userProfile)
+    
     return userProfile
   } catch (error) {
-    console.error('❌ Error creating user profile:', error)
+    console.error('❌ Error creating Firestore profile:', error)
     throw error
   }
 }
@@ -39,35 +43,14 @@ export async function getUserProfile(uid) {
     const userSnap = await getDoc(userRef)
     
     if (userSnap.exists()) {
+      console.log('✅ User profile found:', userSnap.data())
       return userSnap.data()
     } else {
-      console.log('No user profile found')
+      console.log('⚠️ No user profile found for:', uid)
       return null
     }
   } catch (error) {
-    console.error('Error getting user profile:', error)
-    throw error
-  }
-}
-
-/**
- * Update user profile in Firestore
- */
-export async function updateUserProfile(uid, updates) {
-  try {
-    const userRef = doc(db, 'users', uid)
-    
-    const updatedData = {
-      ...updates,
-      updatedAt: serverTimestamp()
-    }
-
-    await setDoc(userRef, updatedData, { merge: true })
-    
-    console.log('✅ User profile updated:', uid)
-    return updatedData
-  } catch (error) {
-    console.error('❌ Error updating user profile:', error)
+    console.error('❌ Error getting user profile:', error)
     throw error
   }
 }

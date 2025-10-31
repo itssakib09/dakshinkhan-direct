@@ -1,4 +1,4 @@
-import { createUserProfile } from '../services/userService'
+import { createUserProfile, getUserProfile } from '../services/userService'
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
@@ -27,34 +27,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   // Sign up with email and password
+// Sign up with email and password
 async function signUp(email, password, displayName, additionalData = {}) {
-  console.log('🔵 SignUp attempt:', { email, displayName })
+  console.log('🔵 SignUp attempt:', { email, displayName, additionalData })
   try {
-    // Create auth user
+    // Step 1: Create Firebase Auth user
     const result = await createUserWithEmailAndPassword(auth, email, password)
+    console.log('✅ Auth user created:', result.user.uid)
     
-    // Update display name
+    // Step 2: Update display name
     if (displayName) {
       await updateProfile(result.user, { displayName })
+      console.log('✅ Display name updated')
     }
     
-    // Wait a moment for auth to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Step 3: Create Firestore document
+    await createUserProfile(result.user.uid, {
+      email: result.user.email,
+      displayName: displayName || '',
+      phone: additionalData.phone || '',
+      role: additionalData.role || 'customer',
+      photoURL: ''
+    })
     
-    // Create Firestore profile
-    try {
-      await createUserProfile(result.user.uid, {
-        email: result.user.email,
-        displayName: displayName || '',
-        ...additionalData
-      })
-      console.log('✅ User profile created in Firestore')
-    } catch (firestoreError) {
-      console.error('⚠️ Firestore profile creation failed:', firestoreError)
-      // Auth still succeeded, just log the error
-    }
-    
-    console.log('✅ SignUp successful:', result.user.email)
+    console.log('✅ SignUp complete!')
     return result
   } catch (error) {
     console.error('❌ SignUp error:', error.message)
@@ -76,40 +72,29 @@ async function signUp(email, password, displayName, additionalData = {}) {
   }
 
   // Sign in with Google
+// Sign in with Google
 async function signInWithGoogle() {
   console.log('🔵 Google SignIn attempt')
   try {
     const provider = new GoogleAuthProvider()
-    
-    // Add these settings to prevent popup issues
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    })
-    
     const result = await signInWithPopup(auth, provider)
+    console.log('✅ Google auth successful:', result.user.uid)
     
-    // Wait a moment for auth to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Check if user document exists
+    const existingProfile = await getUserProfile(result.user.uid)
     
-    // Check if user document exists, if not create it
-    try {
-      const { getUserProfile } = await import('../services/userService')
-      const existingProfile = await getUserProfile(result.user.uid)
-      
-      if (!existingProfile) {
-        await createUserProfile(result.user.uid, {
-          email: result.user.email,
-          displayName: result.user.displayName || '',
-          photoURL: result.user.photoURL || '',
-          role: 'customer'
-        })
-      }
-    } catch (firestoreError) {
-      console.warn('⚠️ Could not create Firestore profile, but auth succeeded:', firestoreError)
-      // User is still signed in, just no Firestore doc
+    if (!existingProfile) {
+      console.log('📝 Creating new Firestore profile for Google user')
+      await createUserProfile(result.user.uid, {
+        email: result.user.email,
+        displayName: result.user.displayName || '',
+        photoURL: result.user.photoURL || '',
+        role: 'customer'
+      })
+    } else {
+      console.log('✅ Existing profile found, skipping creation')
     }
     
-    console.log('✅ Google SignIn successful:', result.user.email)
     return result
   } catch (error) {
     console.error('❌ Google SignIn error:', error.message)
