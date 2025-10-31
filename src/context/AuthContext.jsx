@@ -30,20 +30,29 @@ export function AuthProvider({ children }) {
 async function signUp(email, password, displayName, additionalData = {}) {
   console.log('🔵 SignUp attempt:', { email, displayName })
   try {
-    // Create Firebase Auth user
+    // Create auth user
     const result = await createUserWithEmailAndPassword(auth, email, password)
     
-    // Update profile with display name
+    // Update display name
     if (displayName) {
       await updateProfile(result.user, { displayName })
     }
     
-    // Create Firestore user document
-    await createUserProfile(result.user.uid, {
-      email: result.user.email,
-      displayName: displayName || '',
-      ...additionalData
-    })
+    // Wait a moment for auth to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Create Firestore profile
+    try {
+      await createUserProfile(result.user.uid, {
+        email: result.user.email,
+        displayName: displayName || '',
+        ...additionalData
+      })
+      console.log('✅ User profile created in Firestore')
+    } catch (firestoreError) {
+      console.error('⚠️ Firestore profile creation failed:', firestoreError)
+      // Auth still succeeded, just log the error
+    }
     
     console.log('✅ SignUp successful:', result.user.email)
     return result
@@ -71,19 +80,33 @@ async function signInWithGoogle() {
   console.log('🔵 Google SignIn attempt')
   try {
     const provider = new GoogleAuthProvider()
+    
+    // Add these settings to prevent popup issues
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    })
+    
     const result = await signInWithPopup(auth, provider)
     
-    // Check if user document exists, if not create it
-    const { getUserProfile } = await import('../services/userService')
-    const existingProfile = await getUserProfile(result.user.uid)
+    // Wait a moment for auth to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    if (!existingProfile) {
-      await createUserProfile(result.user.uid, {
-        email: result.user.email,
-        displayName: result.user.displayName || '',
-        photoURL: result.user.photoURL || '',
-        role: 'customer'
-      })
+    // Check if user document exists, if not create it
+    try {
+      const { getUserProfile } = await import('../services/userService')
+      const existingProfile = await getUserProfile(result.user.uid)
+      
+      if (!existingProfile) {
+        await createUserProfile(result.user.uid, {
+          email: result.user.email,
+          displayName: result.user.displayName || '',
+          photoURL: result.user.photoURL || '',
+          role: 'customer'
+        })
+      }
+    } catch (firestoreError) {
+      console.warn('⚠️ Could not create Firestore profile, but auth succeeded:', firestoreError)
+      // User is still signed in, just no Firestore doc
     }
     
     console.log('✅ Google SignIn successful:', result.user.email)
