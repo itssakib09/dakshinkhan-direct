@@ -28,39 +28,52 @@ export function AuthProvider({ children }) {
 
   // Sign up with email and password
   async function signUp(email, password, displayName, additionalData = {}) {
-    console.log('🔵 [SIGNUP] Starting signup process')
+  console.log('🔵 [SIGNUP] Starting signup process')
+  
+  try {
+    // Step 1: Create Firebase Auth user
+    console.log('🔧 [SIGNUP] Creating auth user...')
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    console.log('✅ [SIGNUP] Auth user created:', result.user.uid)
     
-    try {
-      // Step 1: Create Firebase Auth user
-      console.log('📧 [SIGNUP] Creating auth user...')
-      const result = await createUserWithEmailAndPassword(auth, email, password)
-      console.log('✅ [SIGNUP] Auth user created:', result.user.uid)
-      
-      // Step 2: Update display name
-      if (displayName) {
-        await updateProfile(result.user, { displayName })
-        console.log('✅ [SIGNUP] Display name updated')
-      }
-      
-      // Step 3: Create Firestore document
-      console.log('💾 [SIGNUP] Creating Firestore document...')
-      const profileData = await createUserProfile(result.user.uid, {
-        email: result.user.email,
-        displayName: displayName || '',
-        phone: additionalData.phone || '',
-        role: additionalData.role || 'customer',
-        photoURL: ''
-      })
-      
-      console.log('✅ [SIGNUP] Firestore document created')
-      console.log('🎉 [SIGNUP] Signup complete!')
-      
-      return { user: result.user, profile: profileData }
-    } catch (error) {
-      console.error('❌ [SIGNUP] Failed:', error.code, error.message)
-      throw error
+    // Step 2: Update display name
+    if (displayName) {
+      await updateProfile(result.user, { displayName })
+      console.log('✅ [SIGNUP] Display name updated')
     }
+    
+    // CRITICAL FIX: Force token refresh before Firestore write
+    console.log('🔄 [SIGNUP] Refreshing auth token...')
+    await result.user.getIdToken(true)
+    
+    // CRITICAL FIX: Add delay to ensure token is propagated
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Step 3: Create Firestore document
+    console.log('💾 [SIGNUP] Creating Firestore document...')
+    const profileData = await createUserProfile(result.user.uid, {
+      email: result.user.email,
+      displayName: displayName || '',
+      phone: additionalData.phone || '',
+      role: additionalData.role || 'customer',
+      photoURL: ''
+    })
+    
+    console.log('✅ [SIGNUP] Firestore document created')
+    
+    // CRITICAL FIX: Set profile in state immediately
+    setUserProfile(profileData)
+    
+    console.log('🎉 [SIGNUP] Signup complete!')
+    
+    return { user: result.user, profile: profileData }
+  } catch (error) {
+    console.error('❌ [SIGNUP] Failed:', error.code, error.message)
+    
+    // If auth succeeded but Firestore failed, still throw
+    throw error
   }
+}
 
   // Sign in with email and password
   async function signIn(email, password) {

@@ -125,65 +125,62 @@ function Signup() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
+  e.preventDefault()
 
-    if (!validateAll()) {
-      setError('Please fix the errors before submitting')
-      return
-    }
-
-    setError('')
-    setLoading(true)
-
-    try {
-      console.log('=== [SIGNUP FORM] Starting submission ===')
-      
-      const normalizedPhone = normalizePhoneBD(phone)
-      
-      console.log('[SIGNUP FORM] Calling signUp with:', {
-        email,
-        name,
-        phone: normalizedPhone,
-        role
-      })
-
-      // Call signup function
-      await signUp(email, password, name, {
-        phone: normalizedPhone,
-        role: role
-      })
-
-      console.log('✅ [SIGNUP FORM] Signup successful, redirecting...')
-
-      // Redirect based on role
-      if (role === 'business' || role === 'service') {
-        navigate('/dashboard')
-      } else {
-        navigate('/')
-      }
-
-    } catch (error) {
-      console.error('❌ [SIGNUP FORM] Error:', error)
-      
-      let errorMessage = 'Failed to create account. '
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Please login instead.'
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak. Please use a stronger password.'
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address.'
-      } else if (error.code === 'permission-denied' || error.message?.includes('permission')) {
-        errorMessage = 'Database permission error. Please contact support.'
-      } else {
-        errorMessage += error.message
-      }
-      
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
-    }
+  if (!validateAll()) {
+    setError('Please fix the errors before submitting')
+    return
   }
+
+  setError('')
+  setLoading(true)
+
+  try {
+    console.log('=== [SIGNUP FORM] Starting submission ===')
+    
+    const normalizedPhone = normalizePhoneBD(phone)
+    
+    console.log('[SIGNUP FORM] Calling signUp...')
+
+    // Call signup function
+    const result = await signUp(email, password, name, {
+      phone: normalizedPhone,
+      role: role
+    })
+
+    console.log('✅ [SIGNUP FORM] Signup successful!')
+    console.log('Profile created:', result.profile)
+
+    // Small delay to ensure everything is ready
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Redirect based on role
+    if (role === 'business' || role === 'service') {
+      navigate('/dashboard')
+    } else {
+      navigate('/')
+    }
+
+  } catch (error) {
+    console.error('❌ [SIGNUP FORM] Error:', error)
+    
+    let errorMessage = 'Failed to create account. '
+    
+    if (error.code === 'auth/email-already-in-use') {
+      errorMessage = 'This email is already registered. Please login instead.'
+    } else if (error.code === 'auth/weak-password') {
+      errorMessage = 'Password is too weak.'
+    } else if (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions')) {
+      errorMessage = 'Database error: Please make sure you updated Firestore rules and clicked Publish. Wait 60 seconds and try again.'
+    } else {
+      errorMessage += error.message
+    }
+    
+    setError(errorMessage)
+  } finally {
+    setLoading(false)
+  }
+}
 
   async function handleGoogleSignIn() {
     setError('')
