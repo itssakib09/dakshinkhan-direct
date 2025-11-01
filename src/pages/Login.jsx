@@ -1,3 +1,4 @@
+import { getUserProfile } from '../services/userService'
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -19,12 +20,21 @@ function Login() {
     setLoading(true)
     
     console.log('=== STARTING LOGIN ===')
-    await signIn(email, password)
-    console.log('=== LOGIN SUCCESS - NAVIGATING ===')
+    const result = await signIn(email, password)
+    console.log('=== LOGIN SUCCESS ===')
     
-    setTimeout(() => {
+    // Get user profile to check role
+    const profile = await getUserProfile(result.user.uid)
+    console.log('User profile:', profile)
+    
+    // Redirect based on role
+    if (profile && (profile.role === 'business' || profile.role === 'service')) {
+      console.log('Redirecting to dashboard')
       navigate('/dashboard')
-    }, 500)
+    } else {
+      console.log('Redirecting to home')
+      navigate('/')
+    }
     
   } catch (error) {
     console.error('=== LOGIN ERROR ===')
@@ -53,12 +63,21 @@ function Login() {
     setLoading(true)
     
     console.log('=== STARTING GOOGLE SIGNIN ===')
-    await signInWithGoogle()
+    const result = await signInWithGoogle()
     console.log('=== GOOGLE SIGNIN SUCCESS ===')
     
-    setTimeout(() => {
+    // Get user profile to check role
+    const profile = await getUserProfile(result.user.uid)
+    console.log('User profile:', profile)
+    
+    // Redirect based on role
+    if (profile && (profile.role === 'business' || profile.role === 'service')) {
+      console.log('Redirecting to dashboard')
       navigate('/dashboard')
-    }, 500)
+    } else {
+      console.log('Redirecting to home')
+      navigate('/')
+    }
     
   } catch (error) {
     console.error('=== GOOGLE SIGNIN ERROR ===')

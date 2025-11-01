@@ -165,10 +165,14 @@ function Signup() {
 
     console.log('=== SIGNUP SUCCESS - NAVIGATING TO DASHBOARD ===')
     
-    // Small delay to ensure everything completes
-    setTimeout(() => {
-      navigate('/dashboard')
-    }, 500)
+    /// Redirect based on role
+setTimeout(() => {
+  if (role === 'business' || role === 'service') {
+    navigate('/dashboard')
+  } else {
+    navigate('/')
+  }
+}, 500)
 
   } catch (error) {
     console.error('=== SIGNUP ERROR ===')

@@ -1,4 +1,5 @@
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
 export async function createUserProfile(uid, userData) {
@@ -51,6 +52,30 @@ export async function getUserProfile(uid) {
     }
   } catch (error) {
     console.error('❌ Error reading Firestore:', error)
+    throw error
+  }
+}
+
+import { collection, query, where, getDocs } from 'firebase/firestore'
+
+// Add this function after getUserProfile
+export async function getUserByPhone(phone) {
+  try {
+    console.log('🔍 Searching for user with phone:', phone)
+    const usersRef = collection(db, 'users')
+    const q = query(usersRef, where('phone', '==', phone))
+    const querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      const userDoc = querySnapshot.docs[0]
+      console.log('✅ User found:', userDoc.data())
+      return userDoc.data()
+    } else {
+      console.log('⚠️ No user found with this phone')
+      return null
+    }
+  } catch (error) {
+    console.error('❌ Error searching by phone:', error)
     throw error
   }
 }
