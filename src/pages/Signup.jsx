@@ -14,19 +14,14 @@ import {
 } from '../utils/validation'
 
 function Signup() {
-  // Form state
   const [role, setRole] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-
-  // Validation state
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
-
-  // UI state
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -55,10 +50,8 @@ function Signup() {
     }
   ]
 
-  // Validate single field
   function validateField(field, value) {
     let error = ''
-
     switch (field) {
       case 'role':
         if (!value) error = 'Please select a role'
@@ -84,11 +77,9 @@ function Signup() {
         else if (value !== password) error = 'Passwords do not match'
         break
     }
-
     return error
   }
 
-  // Handle field blur
   function handleBlur(field) {
     setTouched(prev => ({ ...prev, [field]: true }))
     const value = { role, name, email, phone, password, confirmPassword }[field]
@@ -96,9 +87,7 @@ function Signup() {
     setErrors(prev => ({ ...prev, [field]: error }))
   }
 
-  // Handle field change
   function handleChange(field, value) {
-    // Update value
     switch (field) {
       case 'role': setRole(value); break
       case 'name': setName(value); break
@@ -107,15 +96,12 @@ function Signup() {
       case 'password': setPassword(value); break
       case 'confirmPassword': setConfirmPassword(value); break
     }
-
-    // Clear error if field was touched
     if (touched[field]) {
       const error = validateField(field, value)
       setErrors(prev => ({ ...prev, [field]: error }))
     }
   }
 
-  // Validate all fields
   function validateAll() {
     const newErrors = {}
     newErrors.role = validateField('role', role)
@@ -139,99 +125,89 @@ function Signup() {
   }
 
   async function handleSubmit(e) {
-  e.preventDefault()
+    e.preventDefault()
 
-  // Validate all fields
-  if (!validateAll()) {
-    setError('Please fix the errors before submitting')
-    return
-  }
+    if (!validateAll()) {
+      setError('Please fix the errors before submitting')
+      return
+    }
 
-  try {
-    setError('') // Clear any previous errors
+    setError('')
     setLoading(true)
 
-    console.log('=== STARTING SIGNUP PROCESS ===')
-    
-    // Normalize phone number
-    const normalizedPhone = normalizePhoneBD(phone)
-    console.log('Normalized phone:', normalizedPhone)
+    try {
+      console.log('=== [SIGNUP FORM] Starting submission ===')
+      
+      const normalizedPhone = normalizePhoneBD(phone)
+      
+      console.log('[SIGNUP FORM] Calling signUp with:', {
+        email,
+        name,
+        phone: normalizedPhone,
+        role
+      })
 
-    // Sign up with Firebase and create Firestore document
-    await signUp(email, password, name, {
-      phone: normalizedPhone,
-      role: role
-    })
+      // Call signup function
+      await signUp(email, password, name, {
+        phone: normalizedPhone,
+        role: role
+      })
 
-    console.log('=== SIGNUP SUCCESS - NAVIGATING TO DASHBOARD ===')
-    
-    /// Redirect based on role
-setTimeout(() => {
-  if (role === 'business' || role === 'service') {
-    navigate('/dashboard')
-  } else {
-    navigate('/')
-  }
-}, 500)
+      console.log('✅ [SIGNUP FORM] Signup successful, redirecting...')
 
-  } catch (error) {
-    console.error('=== SIGNUP ERROR ===')
-    console.error('Error:', error)
-    
-    // Show user-friendly error message
-    let errorMessage = 'Failed to create account. '
-    
-    if (error.code === 'auth/email-already-in-use') {
-      errorMessage = 'This email is already registered. Please login instead.'
-    } else if (error.code === 'auth/weak-password') {
-      errorMessage = 'Password is too weak. Please use a stronger password.'
-    } else if (error.code === 'auth/invalid-email') {
-      errorMessage = 'Invalid email address.'
-    } else if (error.code === 'permission-denied') {
-      errorMessage = 'Database permission error. Please contact support.'
-    } else {
-      errorMessage += error.message
+      // Redirect based on role
+      if (role === 'business' || role === 'service') {
+        navigate('/dashboard')
+      } else {
+        navigate('/')
+      }
+
+    } catch (error) {
+      console.error('❌ [SIGNUP FORM] Error:', error)
+      
+      let errorMessage = 'Failed to create account. '
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please login instead.'
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use a stronger password.'
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address.'
+      } else if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        errorMessage = 'Database permission error. Please contact support.'
+      } else {
+        errorMessage += error.message
+      }
+      
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
     }
-    
-    setError(errorMessage)
-  } finally {
-    setLoading(false)
   }
-}
 
   async function handleGoogleSignIn() {
-  try {
     setError('')
     setLoading(true)
     
-    console.log('=== STARTING GOOGLE SIGNIN ===')
-    await signInWithGoogle()
-    console.log('=== GOOGLE SIGNIN SUCCESS - NAVIGATING ===')
-    
-    // Small delay to ensure everything completes
-    setTimeout(() => {
-      navigate('/dashboard')
-    }, 500)
-    
-  } catch (error) {
-    console.error('=== GOOGLE SIGNIN ERROR ===')
-    console.error('Error:', error)
-    
-    let errorMessage = 'Failed to sign in with Google. '
-    
-    if (error.code === 'auth/popup-closed-by-user') {
-      errorMessage = 'Sign-in cancelled. Please try again.'
-    } else if (error.code === 'permission-denied') {
-      errorMessage = 'Database permission error. Please contact support.'
-    } else {
-      errorMessage += error.message
+    try {
+      console.log('=== [GOOGLE SIGNUP] Starting ===')
+      await signInWithGoogle()
+      console.log('✅ [GOOGLE SIGNUP] Success, redirecting...')
+      navigate('/')
+    } catch (error) {
+      console.error('❌ [GOOGLE SIGNUP] Error:', error)
+      
+      let errorMessage = 'Failed to sign in with Google. '
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in cancelled. Please try again.'
+      } else {
+        errorMessage += error.message
+      }
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
     }
-    
-    setError(errorMessage)
-  } finally {
-    setLoading(false)
   }
-}
 
   const passwordStrength = checkPasswordStrength(password)
 
@@ -250,7 +226,6 @@ setTimeout(() => {
 
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               I am a... <span className="text-red-500">*</span>
@@ -272,7 +247,6 @@ setTimeout(() => {
             )}
           </div>
 
-          {/* Name */}
           <Input
             label="Full Name"
             value={name}
@@ -283,7 +257,6 @@ setTimeout(() => {
             required
           />
 
-          {/* Email */}
           <Input
             label="Email"
             type="email"
@@ -295,7 +268,6 @@ setTimeout(() => {
             required
           />
 
-          {/* Phone */}
           <div>
             <Input
               label="Phone Number"
@@ -315,7 +287,6 @@ setTimeout(() => {
             )}
           </div>
 
-          {/* Password */}
           <div>
             <Input
               label="Password"
@@ -339,7 +310,6 @@ setTimeout(() => {
             </label>
           </div>
 
-          {/* Confirm Password */}
           <Input
             label="Confirm Password"
             type={showPassword ? 'text' : 'password'}
@@ -351,7 +321,6 @@ setTimeout(() => {
             required
           />
 
-          {/* Submit */}
           <Button
             type="submit"
             variant="primary"
@@ -363,13 +332,11 @@ setTimeout(() => {
           </Button>
         </form>
 
-        {/* Divider */}
         <div className="my-6 text-center text-gray-500 relative">
           <span className="bg-white px-4 relative z-10">OR</span>
           <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-300 -z-0"></div>
         </div>
 
-        {/* Google Sign In */}
         <Button
           onClick={handleGoogleSignIn}
           disabled={loading}
@@ -379,7 +346,6 @@ setTimeout(() => {
           Sign up with Google
         </Button>
 
-        {/* Login Link */}
         <p className="mt-6 text-center text-sm">
           Already have an account?{' '}
           <Link to="/login" className="text-blue-600 hover:underline font-semibold">

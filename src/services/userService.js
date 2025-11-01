@@ -1,15 +1,15 @@
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
 export async function createUserProfile(uid, userData) {
   try {
-    console.log('🔍 Creating Firestore document...')
+    console.log('📝 Creating user profile in Firestore')
     console.log('UID:', uid)
     console.log('Data:', userData)
     
     const userRef = doc(db, 'users', uid)
     
-    const userProfile = {
+    const profileData = {
       uid: uid,
       email: userData.email || '',
       displayName: userData.displayName || '',
@@ -18,60 +18,52 @@ export async function createUserProfile(uid, userData) {
       photoURL: userData.photoURL || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      isActive: true,
+      isActive: true
     }
 
-    console.log('Writing to Firestore path: users/' + uid)
-    await setDoc(userRef, userProfile)
+    await setDoc(userRef, profileData)
+    console.log('✅ User profile created successfully')
     
-    console.log('✅ Firestore document created successfully!')
-    return userProfile
-    
+    return profileData
   } catch (error) {
-    console.error('❌ Firestore creation error!')
+    console.error('❌ Error creating user profile:', error)
     console.error('Error code:', error.code)
     console.error('Error message:', error.message)
-    console.error('Full error:', error)
     throw error
   }
 }
 
 export async function getUserProfile(uid) {
   try {
-    console.log('📖 Reading Firestore document for UID:', uid)
+    console.log('📖 Fetching user profile for UID:', uid)
     const userRef = doc(db, 'users', uid)
     const userSnap = await getDoc(userRef)
     
     if (userSnap.exists()) {
-      console.log('✅ Document found:', userSnap.data())
+      console.log('✅ User profile found')
       return userSnap.data()
     } else {
-      console.log('⚠️ No document found')
+      console.log('⚠️ No user profile found')
       return null
     }
   } catch (error) {
-    console.error('❌ Error reading Firestore:', error)
+    console.error('❌ Error fetching user profile:', error)
     throw error
   }
 }
 
-export async function getUserByPhone(phone) {
+export async function updateUserProfile(uid, updates) {
   try {
-    console.log('🔍 Searching for user with phone:', phone)
-    const usersRef = collection(db, 'users')
-    const q = query(usersRef, where('phone', '==', phone))
-    const querySnapshot = await getDocs(q)
-    
-    if (!querySnapshot.empty) {
-      const userDoc = querySnapshot.docs[0]
-      console.log('✅ User found:', userDoc.data())
-      return userDoc.data()
-    } else {
-      console.log('⚠️ No user found with this phone')
-      return null
+    const userRef = doc(db, 'users', uid)
+    const updateData = {
+      ...updates,
+      updatedAt: serverTimestamp()
     }
+    await setDoc(userRef, updateData, { merge: true })
+    console.log('✅ User profile updated')
+    return updateData
   } catch (error) {
-    console.error('❌ Error searching by phone:', error)
+    console.error('❌ Error updating user profile:', error)
     throw error
   }
 }
