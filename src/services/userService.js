@@ -1,10 +1,9 @@
-
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
 export async function createUserProfile(uid, userData) {
   try {
-    console.log('📝 Creating Firestore document...')
+    console.log('🔍 Creating Firestore document...')
     console.log('UID:', uid)
     console.log('Data:', userData)
     
@@ -56,9 +55,6 @@ export async function getUserProfile(uid) {
   }
 }
 
-import { collection, query, where, getDocs } from 'firebase/firestore'
-
-// Add this function after getUserProfile
 export async function getUserByPhone(phone) {
   try {
     console.log('🔍 Searching for user with phone:', phone)
