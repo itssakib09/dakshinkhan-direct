@@ -47,6 +47,8 @@ export function AuthProvider({ children }) {
       }
       
       // Step 3: Create Firestore Document
+      console.log('Step 2.5: Waiting for auth to initialize...')
+await new Promise(resolve => setTimeout(resolve, 1000))
       console.log('Step 3: Creating Firestore document...')
       const firestoreData = {
         email: result.user.email,
