@@ -45,12 +45,10 @@ export function AuthProvider({ children }) {
         await updateProfile(result.user, { displayName })
         console.log('✅ Display name updated')
       }
-      
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
       // Step 3: Create Firestore Document
-      console.log('Step 2.5: Waiting for auth to initialize...')
-await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log('Step 3: Creating Firestore document...')
-      const firestoreData = {
+        const firestoreData = {
         email: result.user.email,
         displayName: displayName || '',
         phone: additionalData.phone || '',
