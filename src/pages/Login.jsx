@@ -2,7 +2,7 @@ import { getUserProfile } from '../services/userService'
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
+import { Button } from '../components/ui'
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
