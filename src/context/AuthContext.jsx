@@ -93,35 +93,87 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Sign in with Google
-  async function signInWithGoogle() {
-    console.log('🔵 [GOOGLE] Starting Google sign-in')
+  /**
+ * Sign in with Google
+ * Creates Firestore document with proper field mapping on first sign-in
+ */
+async function signInWithGoogle() {
+  console.log('🔵 [Google] Starting Google sign-in...')
+  
+  try {
+    const provider = new GoogleAuthProvider()
     
-    try {
-      const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
-      console.log('✅ [GOOGLE] Auth successful:', result.user.uid)
+    // Optional: Request additional scopes
+    provider.addScope('profile')
+    provider.addScope('email')
+    
+    // Sign in with popup
+    const result = await signInWithPopup(auth, provider)
+    const user = result.user
+    
+    console.log('✅ [Google] Authentication successful')
+    console.log('User ID:', user.uid)
+    console.log('Email:', user.email)
+    console.log('Display Name:', user.displayName)
+    console.log('Photo URL:', user.photoURL)
+
+    // Check if Firestore profile exists
+    console.log('🔍 [Google] Checking for existing profile...')
+    let profile = await getUserProfile(user.uid)
+
+    if (!profile) {
+      console.log('💾 [Google] First-time user - creating profile...')
       
-      // Check if profile exists
-      const existingProfile = await getUserProfile(result.user.uid)
-      
-      if (!existingProfile) {
-        console.log('💾 [GOOGLE] Creating new profile')
-        await createUserProfile(result.user.uid, {
-          email: result.user.email,
-          displayName: result.user.displayName || '',
-          photoURL: result.user.photoURL || '',
-          role: 'customer'
-        })
+      // Map Google user fields to our schema with defaults
+      const profileData = {
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        photoURL: user.photoURL || '',
+        phone: '', // Google doesn't provide phone
+        role: 'customer' // Default role for Google sign-ins
       }
       
-      console.log('✅ [GOOGLE] Sign-in complete')
-      return result
-    } catch (error) {
-      console.error('❌ [GOOGLE] Failed:', error.code, error.message)
+      console.log('[Google] Profile data:', profileData)
+      
+      // Create Firestore document
+      profile = await createUserProfile(user.uid, profileData)
+      console.log('✅ [Google] New profile created')
+    } else {
+      console.log('✅ [Google] Existing profile found')
+      
+      // Optional: Update profile with latest Google data
+      if (user.photoURL && user.photoURL !== profile.photoURL) {
+        console.log('🔄 [Google] Updating photo URL...')
+        await updateUserProfile(user.uid, {
+          photoURL: user.photoURL
+        })
+        profile.photoURL = user.photoURL
+      }
+    }
+
+    // Update local state
+    setUserProfile(profile)
+    
+    console.log('🎉 [Google] Sign-in complete!')
+    return result
+
+  } catch (error) {
+    console.error('❌ [Google] Sign-in failed')
+    console.error('Error code:', error.code)
+    console.error('Error message:', error.message)
+    
+    // Handle specific errors
+    if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in cancelled. Please try again.')
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error('Pop-up blocked. Please enable pop-ups for this site.')
+    } else if (error.code === 'auth/cancelled-popup-request') {
+      throw new Error('Another sign-in is in progress.')
+    } else {
       throw error
     }
   }
+}
 
   // Sign out
   async function logout() {
