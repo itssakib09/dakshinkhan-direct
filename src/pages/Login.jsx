@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Input, Button } from '../components/ui'
-import { getUserEmailByPhone, detectInputType } from '../services/authService'
+import { getUserEmailByPhone, detectInputType } from '../services/authservice'
 import { normalizePhoneBD } from '../utils/validation'
 
 function Login() {
@@ -178,7 +178,6 @@ function Login() {
               value={emailOrPhone}
               onChange={(e) => handleEmailOrPhoneChange(e.target.value)}
               placeholder="your@email.com or 01712345678"
-              helperText={getHelperText()}
               required
             />
           </div>
