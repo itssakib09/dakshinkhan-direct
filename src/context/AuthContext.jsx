@@ -6,10 +6,12 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth'
 import { auth } from '../firebase/config'
-import { createUserProfile, getUserProfile } from '../services/userService'
+import { createUserProfile, getUserProfile, updateUserProfile } from '../services/userService'
 
 const AuthContext = createContext()
 
@@ -25,210 +27,200 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
 
-  // Sign up with email and password
+  // Set persistence on mount
+  useEffect(() => {
+    console.log('🔧 [Session] Setting auth persistence to LOCAL')
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log('✅ [Session] Persistence enabled')
+      })
+      .catch((error) => {
+        console.error('❌ [Session] Failed to set persistence:', error)
+      })
+  }, [])
+
+  /**
+   * Sign up with email and password
+   */
   async function signUp(email, password, displayName, additionalData = {}) {
-  console.log('🔵 [SIGNUP] Starting signup process')
-  console.log('Email:', email)
-  console.log('Display Name:', displayName)
-  
-  try {
-    // Step 1: Create Firebase Auth user
-    console.log('🔧 [SIGNUP] Creating auth user...')
-    const result = await createUserWithEmailAndPassword(auth, email, password)
-    console.log('✅ [SIGNUP] Auth user created:', result.user.uid)
+    console.log('🔵 [AuthContext] Starting signup...')
     
-    // Step 2: Update display name
-    if (displayName) {
-      console.log('📝 [SIGNUP] Updating display name...')
-      await updateProfile(result.user, { displayName })
-      console.log('✅ [SIGNUP] Display name updated')
-    }
-    
-    // Step 3: CRITICAL - Force token refresh and wait
-    console.log('🔄 [SIGNUP] Forcing token refresh...')
-    await result.user.getIdToken(true)
-    console.log('✅ [SIGNUP] Token refreshed')
-    
-    // Step 4: CRITICAL - Wait for token to propagate
-    console.log('⏳ [SIGNUP] Waiting for auth propagation...')
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    console.log('✅ [SIGNUP] Wait complete')
-    
-    // Step 5: Create Firestore document
-    console.log('💾 [SIGNUP] Creating Firestore document...')
-    const profileData = await createUserProfile(result.user.uid, {
-      email: result.user.email,
-      displayName: displayName || '',
-      phone: additionalData.phone || '',
-      role: additionalData.role || 'customer',
-      photoURL: ''
-    })
-    
-    console.log('✅ [SIGNUP] Firestore document created!')
-    console.log('🎉 [SIGNUP] Signup complete!')
-    
-    // Set profile in state immediately
-    setUserProfile(profileData)
-    
-    return { user: result.user, profile: profileData }
-  } catch (error) {
-    console.error('❌ [SIGNUP] Failed!')
-    console.error('Error code:', error.code)
-    console.error('Error message:', error.message)
-    throw error
-  }
-}
-
-  // Sign in with email and password
-  async function signIn(email, password) {
-    console.log('🔵 [LOGIN] Starting login')
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      console.log('✅ [LOGIN] Login successful:', result.user.uid)
-      return result
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+
+      if (displayName) {
+        await updateProfile(user, { displayName })
+      }
+
+      const profileData = await createUserProfile(user.uid, {
+        email: user.email,
+        displayName: displayName || '',
+        phone: additionalData.phone || '',
+        role: additionalData.role || 'customer',
+        photoURL: ''
+      })
+
+      setUserProfile(profileData)
+
+      console.log('✅ [Session] New user session created')
+      return { user, profile: profileData }
+
     } catch (error) {
-      console.error('❌ [LOGIN] Failed:', error.code, error.message)
+      console.error('❌ [AuthContext] signUp error:', error)
+      
+      if (error.message?.includes('profile')) {
+        try {
+          await auth.currentUser?.delete()
+          console.log('✅ Rollback complete')
+        } catch (rollbackError) {
+          console.error('❌ Rollback failed:', rollbackError)
+        }
+      }
+      
       throw error
     }
   }
 
   /**
- * Sign in with Google
- * Creates Firestore document with proper field mapping on first sign-in
- */
-async function signInWithGoogle() {
-  console.log('🔵 [Google] Starting Google sign-in...')
-  
-  try {
-    const provider = new GoogleAuthProvider()
-    
-    // Optional: Request additional scopes
-    provider.addScope('profile')
-    provider.addScope('email')
-    
-    // Sign in with popup
-    const result = await signInWithPopup(auth, provider)
-    const user = result.user
-    
-    console.log('✅ [Google] Authentication successful')
-    console.log('User ID:', user.uid)
-    console.log('Email:', user.email)
-    console.log('Display Name:', user.displayName)
-    console.log('Photo URL:', user.photoURL)
-
-    // Check if Firestore profile exists
-    console.log('🔍 [Google] Checking for existing profile...')
-    let profile = await getUserProfile(user.uid)
-
-    if (!profile) {
-      console.log('💾 [Google] First-time user - creating profile...')
-      
-      // Map Google user fields to our schema with defaults
-      const profileData = {
-        email: user.email || '',
-        displayName: user.displayName || user.email?.split('@')[0] || 'User',
-        photoURL: user.photoURL || '',
-        phone: '', // Google doesn't provide phone
-        role: 'customer' // Default role for Google sign-ins
-      }
-      
-      console.log('[Google] Profile data:', profileData)
-      
-      // Create Firestore document
-      profile = await createUserProfile(user.uid, profileData)
-      console.log('✅ [Google] New profile created')
-    } else {
-      console.log('✅ [Google] Existing profile found')
-      
-      // Optional: Update profile with latest Google data
-      if (user.photoURL && user.photoURL !== profile.photoURL) {
-        console.log('🔄 [Google] Updating photo URL...')
-        await updateUserProfile(user.uid, {
-          photoURL: user.photoURL
-        })
-        profile.photoURL = user.photoURL
-      }
-    }
-
-    // Update local state
-    setUserProfile(profile)
-    
-    console.log('🎉 [Google] Sign-in complete!')
-    return result
-
-  } catch (error) {
-    console.error('❌ [Google] Sign-in failed')
-    console.error('Error code:', error.code)
-    console.error('Error message:', error.message)
-    
-    // Handle specific errors
-    if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Sign-in cancelled. Please try again.')
-    } else if (error.code === 'auth/popup-blocked') {
-      throw new Error('Pop-up blocked. Please enable pop-ups for this site.')
-    } else if (error.code === 'auth/cancelled-popup-request') {
-      throw new Error('Another sign-in is in progress.')
-    } else {
+   * Sign in with email and password
+   */
+  async function signIn(email, password) {
+    console.log('🔵 [AuthContext] Signing in...')
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      console.log('✅ [Session] User session restored')
+      return userCredential
+    } catch (error) {
+      console.error('❌ [AuthContext] signIn error:', error)
       throw error
     }
   }
-}
 
-  // Sign out
+  /**
+   * Sign in with Google
+   */
+  async function signInWithGoogle() {
+    console.log('🔵 [AuthContext] Starting Google sign-in...')
+    
+    try {
+      const provider = new GoogleAuthProvider()
+      provider.addScope('profile')
+      provider.addScope('email')
+      
+      const result = await signInWithPopup(auth, provider)
+      const user = result.user
+
+      let profile = await getUserProfile(user.uid)
+
+      if (!profile) {
+        const profileData = {
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || 'User',
+          photoURL: user.photoURL || '',
+          phone: '',
+          role: 'customer'
+        }
+        
+        profile = await createUserProfile(user.uid, profileData)
+      } else {
+        if (user.photoURL && user.photoURL !== profile.photoURL) {
+          await updateUserProfile(user.uid, { photoURL: user.photoURL })
+          profile.photoURL = user.photoURL
+        }
+      }
+
+      setUserProfile(profile)
+      console.log('✅ [Session] Google user session created')
+      return result
+
+    } catch (error) {
+      console.error('❌ [AuthContext] Google sign-in error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Sign out and clear session
+   */
   async function logout() {
+    console.log('🔵 [Session] Logging out...')
     try {
       await signOut(auth)
+      setCurrentUser(null)
       setUserProfile(null)
-      console.log('✅ [LOGOUT] Successful')
+      console.log('✅ [Session] Session cleared')
     } catch (error) {
-      console.error('❌ [LOGOUT] Failed:', error)
+      console.error('❌ [Session] Logout error:', error)
       throw error
     }
   }
 
-  // Listen to auth state and fetch user profile
+  /**
+   * Session restoration listener
+   * Runs on mount and auth state changes
+   */
   useEffect(() => {
-    console.log('👂 [AUTH] Setting up auth listener')
+    console.log('👂 [Session] Setting up auth state listener...')
     
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔄 [AUTH] Auth state changed:', user?.uid || 'No user')
-      
-      setCurrentUser(user)
+      console.log('🔄 [Session] Auth state changed')
       
       if (user) {
-        // Fetch user profile from Firestore
+        console.log('✅ [Session] User detected:', user.uid)
+        setCurrentUser(user)
+
+        setProfileLoading(true)
         try {
           const profile = await getUserProfile(user.uid)
-          setUserProfile(profile)
-          console.log('✅ [AUTH] User profile loaded')
+          
+          if (profile) {
+            setUserProfile(profile)
+            console.log('✅ [Session] Profile restored from Firestore')
+            console.log('   - Role:', profile.role)
+            console.log('   - Name:', profile.displayName)
+          } else {
+            console.warn('⚠️ [Session] User has no Firestore profile')
+            setUserProfile(null)
+          }
         } catch (error) {
-          console.error('❌ [AUTH] Failed to load profile:', error)
+          console.error('❌ [Session] Failed to restore profile:', error)
           setUserProfile(null)
+        } finally {
+          setProfileLoading(false)
         }
       } else {
+        console.log('⚪ [Session] No user - session cleared')
+        setCurrentUser(null)
         setUserProfile(null)
+        setProfileLoading(false)
       }
-      
+
       setLoading(false)
     })
 
-    return unsubscribe
+    return () => {
+      console.log('👋 [Session] Cleaning up auth listener')
+      unsubscribe()
+    }
   }, [])
 
   const value = {
     currentUser,
     userProfile,
+    loading,
+    profileLoading,
     signUp,
     signIn,
     signInWithGoogle,
-    logout,
-    loading
+    logout
   }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   )
 }

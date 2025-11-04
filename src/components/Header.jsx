@@ -1,15 +1,19 @@
 import { Link } from 'react-router-dom'
-import { Menu, MapPin, LogOut } from 'lucide-react'
+import { Menu, MapPin, LogOut, User } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 function Header({ onMenuClick }) {
-  const { currentUser, logout } = useAuth()
+  const { currentUser, userProfile, logout } = useAuth()
 
   async function handleLogout() {
     try {
+      console.log('🔵 [Header] Logout clicked')
       await logout()
+      console.log('✅ [Header] Logout successful')
+      window.location.href = '/login'
     } catch (error) {
-      console.error('Failed to log out', error)
+      console.error('❌ [Header] Logout failed:', error)
+      alert('Failed to logout. Please try again.')
     }
   }
 
@@ -41,18 +45,35 @@ function Header({ onMenuClick }) {
           {/* Right: User Info or Auth Links */}
           <nav className="hidden md:flex items-center gap-4">
             {currentUser ? (
-              <>
-                <span className="text-sm">
-                  Hello, {currentUser.displayName || currentUser.email}
-                </span>
+              <div className="flex items-center gap-4">
+                {/* User Avatar/Name */}
+                <Link to="/dashboard" className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition">
+                  {userProfile?.photoURL ? (
+                    <img 
+                      src={userProfile.photoURL} 
+                      alt={userProfile.displayName}
+                      className="w-8 h-8 rounded-full border-2 border-white"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
+                      <User size={18} />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium">
+                    {userProfile?.displayName || currentUser.email}
+                  </span>
+                </Link>
+
+                {/* Logout Button */}
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-4 py-2 hover:bg-blue-700 rounded transition"
+                  title="Logout"
                 >
                   <LogOut size={18} />
-                  Logout
+                  <span className="text-sm">Logout</span>
                 </button>
-              </>
+              </div>
             ) : (
               <>
                 <Link
@@ -71,13 +92,14 @@ function Header({ onMenuClick }) {
             )}
           </nav>
 
-          {/* Mobile */}
+          {/* Mobile User Menu */}
           <div className="flex md:hidden gap-2">
             {currentUser ? (
               <button
                 onClick={handleLogout}
-                className="text-sm px-3 py-1 hover:bg-blue-700 rounded"
+                className="text-sm px-3 py-1 hover:bg-blue-700 rounded flex items-center gap-1"
               >
+                <LogOut size={16} />
                 Logout
               </button>
             ) : (
