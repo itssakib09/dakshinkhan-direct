@@ -12,7 +12,7 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const [inputType, setInputType] = useState('email')
   
-  const { signIn, signInWithGoogle, userProfile } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
 
   // Detect input type as user types
@@ -179,6 +179,7 @@ function Login() {
               onChange={(e) => handleEmailOrPhoneChange(e.target.value)}
               placeholder="your@email.com or 01712345678"
               required
+              helperText={getHelperText()}
             />
           </div>
           
