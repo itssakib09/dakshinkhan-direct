@@ -4,13 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import { Input, Button } from '../components/ui'
 import RoleCard from '../components/RoleCard'
 import PasswordStrength from '../components/PasswordStrength'
-import { Store, Wrench, User } from 'lucide-react'
+import { Store, Wrench, User, Check } from 'lucide-react'
 import {
   validateEmail,
   validatePhoneBD,
   normalizePhoneBD,
   formatPhoneBD,
-  checkPasswordStrength
+  checkPasswordStrength,
+  getFriendlyAuthError
 } from '../utils/validation'
 
 function Signup() {
@@ -51,34 +52,66 @@ function Signup() {
   ]
 
   function validateField(field, value) {
-    let error = ''
-    switch (field) {
-      case 'role':
-        if (!value) error = 'Please select a role'
-        break
-      case 'name':
-        if (!value.trim()) error = 'Name is required'
-        else if (value.trim().length < 2) error = 'Name must be at least 2 characters'
-        break
-      case 'email':
-        if (!value) error = 'Email is required'
-        else if (!validateEmail(value)) error = 'Invalid email address'
-        break
-      case 'phone':
-        if (!value) error = 'Phone number is required'
-        else if (!validatePhoneBD(value)) error = 'Invalid Bangladesh phone number'
-        break
-      case 'password':
-        if (!value) error = 'Password is required'
-        else if (value.length < 6) error = 'Password must be at least 6 characters'
-        break
-      case 'confirmPassword':
-        if (!value) error = 'Please confirm your password'
-        else if (value !== password) error = 'Passwords do not match'
-        break
-    }
-    return error
+  let error = ''
+  
+  switch (field) {
+    case 'role':
+      if (!value) error = 'Please select your role to continue'
+      break
+      
+    case 'name':
+      if (!value.trim()) {
+        error = 'Please enter your full name'
+      } else if (value.trim().length < 2) {
+        error = 'Name must be at least 2 characters'
+      } else if (value.trim().length > 50) {
+        error = 'Name is too long (max 50 characters)'
+      } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+        error = 'Name can only contain letters and spaces'
+      }
+      break
+      
+    case 'email': {
+  const emailValidation = validateEmail(value)
+  if (!emailValidation.valid) {
+    error = emailValidation.message
   }
+  break
+}
+
+      
+    case 'phone':
+      if (!value) {
+        error = 'Phone number is required'
+      } else if (!validatePhoneBD(value)) {
+        error = 'Please enter a valid Bangladesh phone number (e.g., 01712345678)'
+      }
+      break
+      
+    case 'password':
+      if (!value) {
+        error = 'Password is required'
+      } else if (value.length < 8) {
+        error = 'Password must be at least 8 characters long'
+      } else {
+        const strength = checkPasswordStrength(value)
+        if (strength && strength.score < 2) {
+          error = 'Password is too weak. Please add more variety.'
+        }
+      }
+      break
+      
+    case 'confirmPassword':
+      if (!value) {
+        error = 'Please confirm your password'
+      } else if (value !== password) {
+        error = 'Passwords do not match'
+      }
+      break
+  }
+  
+  return error
+}
 
   function handleBlur(field) {
     setTouched(prev => ({ ...prev, [field]: true }))
@@ -162,24 +195,17 @@ function Signup() {
     }
 
   } catch (error) {
-    console.error('❌ [SIGNUP FORM] Error:', error)
-    
-    let errorMessage = 'Failed to create account. '
-    
-    if (error.code === 'auth/email-already-in-use') {
-      errorMessage = 'This email is already registered. Please login instead.'
-    } else if (error.code === 'auth/weak-password') {
-      errorMessage = 'Password is too weak.'
-    } else if (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions')) {
-      errorMessage = 'Database error: Please make sure you updated Firestore rules and clicked Publish. Wait 60 seconds and try again.'
-    } else {
-      errorMessage += error.message
-    }
-    
-    setError(errorMessage)
-  } finally {
-    setLoading(false)
-  }
+  console.error('═══════════════════════════════════')
+  console.error('❌ SIGNUP FAILED')
+  console.error('Error:', error)
+  console.error('═══════════════════════════════════')
+
+  // Use friendly error messages
+  const friendlyMessage = getFriendlyAuthError(error)
+  setError(friendlyMessage)
+} finally {
+  setLoading(false)
+}
 }
 
   async function handleGoogleSignIn() {
@@ -271,57 +297,71 @@ function Signup() {
           />
 
           <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => handleChange('email', e.target.value)}
-            onBlur={() => handleBlur('email')}
-            error={touched.email ? errors.email : ''}
-            placeholder="your@email.com"
-            required
-          />
+    label="Email"
+    type="email"
+    value={email}
+    onChange={(e) => handleChange('email', e.target.value)}
+    onBlur={() => handleBlur('email')}
+    error={touched.email ? errors.email : ''}
+    placeholder="your@email.com"
+    required
+  />
+  {email && !errors.email && touched.email && (
+    <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
+      <Check size={14} />
+      Valid email address
+    </p>
+  )}
 
-          <div>
-            <Input
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
-              onBlur={() => handleBlur('phone')}
-              error={touched.phone ? errors.phone : ''}
-              placeholder="01712345678"
-              helperText="Bangladesh phone number (e.g., 01712345678)"
-              required
-            />
-            {phone && validatePhoneBD(phone) && (
-              <p className="mt-1 text-sm text-green-600">
-                ✓ Formatted: {formatPhoneBD(phone)}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => handleChange('password', e.target.value)}
-              onBlur={() => handleBlur('password')}
-              error={touched.password ? errors.password : ''}
-              placeholder="••••••••"
-              required
-            />
-            <PasswordStrength strength={passwordStrength} />
-            <label className="flex items-center gap-2 mt-2 text-sm">
-              <input
-                type="checkbox"
-                checked={showPassword}
-                onChange={(e) => setShowPassword(e.target.checked)}
-                className="rounded"
-              />
-              Show password
-            </label>
-          </div>
+         <div>
+  <Input
+    label="Phone Number"
+    type="tel"
+    value={phone}
+    onChange={(e) => handleChange('phone', e.target.value)}
+    onBlur={() => handleBlur('phone')}
+    error={touched.phone ? errors.phone : ''}
+    placeholder="01712345678"
+    helperText="Bangladesh mobile number"
+    required
+  />
+  {phone && validatePhoneBD(phone) && !errors.phone && (
+    <div className="mt-2 space-y-1">
+      <p className="text-sm text-green-600 flex items-center gap-1">
+        <Check size={14} />
+        Valid phone number
+      </p>
+      <p className="text-xs text-gray-500">
+        Will be saved as: {formatPhoneBD(phone)}
+      </p>
+    </div>
+  )}
+</div>
+          
+<div>
+  <Input
+    label="Password"
+    type={showPassword ? 'text' : 'password'}
+    value={password}
+    onChange={(e) => handleChange('password', e.target.value)}
+    onBlur={() => handleBlur('password')}
+    error={touched.password && errors.password ? errors.password : ''}
+    placeholder="Create a strong password"
+    required
+  />
+  
+  {password && <PasswordStrength strength={passwordStrength} />}
+  
+  <label className="flex items-center gap-2 mt-3 text-sm cursor-pointer hover:text-gray-700 transition">
+    <input
+      type="checkbox"
+      checked={showPassword}
+      onChange={(e) => setShowPassword(e.target.checked)}
+      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    />
+    <span>Show password</span>
+  </label>
+</div>
 
           <Input
             label="Confirm Password"

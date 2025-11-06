@@ -1,41 +1,76 @@
 import clsx from 'clsx'
+import { Check, X } from 'lucide-react'
 
 function PasswordStrength({ strength }) {
-  if (!strength || strength.score === 0) return null
-
-  const colorClasses = {
-    red: { bg: 'bg-red-500', text: 'text-red-600' },
-    orange: { bg: 'bg-orange-500', text: 'text-orange-600' },
-    yellow: { bg: 'bg-yellow-500', text: 'text-yellow-600' },
-    blue: { bg: 'bg-blue-500', text: 'text-blue-600' },
-    green: { bg: 'bg-green-500', text: 'text-green-600' },
-  }
-
-  const colors = colorClasses[strength.color]
+  if (!strength) return null
 
   return (
-    <div className="mt-2">
-      {/* Progress bar */}
-      <div className="flex gap-1 mb-2">
-        {[1, 2, 3, 4, 5].map((level) => (
+    <div className="mt-3 space-y-3">
+      {/* Strength Bar */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Password Strength</span>
+          <span className={clsx('text-sm font-semibold', strength.textColor)}>
+            {strength.label}
+          </span>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
-            key={level}
-            className={clsx(
-              'h-1 flex-1 rounded-full transition-all',
-              level <= strength.score
-                ? colors.bg
-                : 'bg-gray-200'
-            )}
+            className={clsx('h-full transition-all duration-300 rounded-full', strength.bgColor)}
+            style={{ width: `${strength.percentage}%` }}
           />
-        ))}
+        </div>
       </div>
-      {/* Feedback */}
-      <p className="text-sm text-gray-600">
-        <span className={clsx('font-semibold', colors.text)}>
-          {strength.label}:
-        </span>{' '}
-        {strength.feedback}
-      </p>
+
+      {/* Requirements Checklist */}
+      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+        <p className="text-xs font-medium text-gray-700 mb-2">Password must contain:</p>
+        
+        <RequirementItem 
+          met={strength.requirements.length} 
+          text="At least 8 characters" 
+        />
+        <RequirementItem 
+          met={strength.requirements.uppercase} 
+          text="One uppercase letter (A-Z)" 
+        />
+        <RequirementItem 
+          met={strength.requirements.lowercase} 
+          text="One lowercase letter (a-z)" 
+        />
+        <RequirementItem 
+          met={strength.requirements.number} 
+          text="One number (0-9)" 
+        />
+        <RequirementItem 
+          met={strength.requirements.special} 
+          text="One special character (!@#$...)" 
+        />
+      </div>
+
+      {/* Feedback Message */}
+      {strength.score < 4 && (
+        <p className="text-xs text-gray-600 italic">
+          💡 Tip: {strength.feedback}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RequirementItem({ met, text }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {met ? (
+        <Check size={14} className="text-green-600 flex-shrink-0" />
+      ) : (
+        <X size={14} className="text-gray-400 flex-shrink-0" />
+      )}
+      <span className={met ? 'text-green-700 font-medium' : 'text-gray-600'}>
+        {text}
+      </span>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { Input, Button } from '../components/ui'
 import { getUserEmailByPhone, detectInputType } from '../services/authservice'
 import { normalizePhoneBD } from '../utils/validation'
-
+import { getFriendlyAuthError } from '../utils/validation'
 function Login() {
   const [emailOrPhone, setEmailOrPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -78,35 +78,12 @@ function Login() {
       navigate('/dashboard')
       
     } catch (error) {
-      console.error('═══════════════════════════════════')
-      console.error('❌ LOGIN FAILED')
-      console.error('Error:', error)
-      console.error('═══════════════════════════════════')
-      
-      let errorMessage = 'Failed to sign in. '
-      
-      if (error.message?.includes('No account found with this phone')) {
-        errorMessage = 'No account found with this phone number. Please check your number or sign up.'
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = inputType === 'email' 
-          ? 'No account found with this email.' 
-          : 'No account found.'
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password.'
-      } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email/phone or password.'
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later.'
-      } else if (error.message?.includes('lookup')) {
-        errorMessage = 'Error looking up phone number. Please try again.'
-      } else {
-        errorMessage += error.message
-      }
-      
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
-    }
+  console.error('❌ LOGIN FAILED:', error)
+  const friendlyMessage = getFriendlyAuthError(error)
+  setError(friendlyMessage)
+} finally {
+  setLoading(false)
+}
   }
 
   async function handleGoogleSignIn() {
@@ -124,27 +101,12 @@ function Login() {
       navigate('/dashboard')
       
     } catch (error) {
-      console.error('═══════════════════════════════════')
-      console.error('❌ GOOGLE LOGIN FAILED')
-      console.error('Error:', error)
-      console.error('═══════════════════════════════════')
-
-      let errorMessage = 'Failed to sign in with Google. '
-      
-      if (error.message?.includes('cancelled') || error.message?.includes('closed')) {
-        errorMessage = 'Sign-in was cancelled. Please try again.'
-      } else if (error.message?.includes('blocked')) {
-        errorMessage = 'Pop-up was blocked by your browser. Please allow pop-ups and try again.'
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = 'An account already exists with this email using a different sign-in method.'
-      } else {
-        errorMessage += error.message
-      }
-      
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
-    }
+  console.error('❌ GOOGLE LOGIN FAILED:', error)
+  const friendlyMessage = getFriendlyAuthError(error)
+  setError(friendlyMessage)
+} finally {
+  setLoading(false)
+}
   }
 
   // Get helper text based on input type
