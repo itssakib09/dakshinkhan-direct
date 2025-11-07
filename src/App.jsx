@@ -13,7 +13,7 @@ import Admin from './pages/Admin'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import ComponentDemo from './pages/ComponentDemo'
-
+import SeedPage from './pages/SeedPage'
 function App() {
   return (
     <AuthProvider>
@@ -29,6 +29,7 @@ function App() {
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
             <Route path="components" element={<ComponentDemo />} />
+            <Route path="/seed" element={<SeedPage />} />
             
             {/* Protected Routes */}
             <Route

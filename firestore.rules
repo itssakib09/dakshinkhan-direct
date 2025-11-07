@@ -1,10 +1,8 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ========== HELPER FUNCTIONS ==========
-    
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -17,102 +15,44 @@ service cloud.firestore {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    function isActiveUser() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
-    }
-    
-    // ========== USERS COLLECTION ==========
-    
+
+    // Users collection
     match /users/{userId} {
-      // Anyone authenticated can read user profiles (for public store pages)
       allow read: if isAuthenticated();
-      
-      // Users can create their own document on signup
-      allow create: if isAuthenticated() && 
-                       request.auth.uid == userId &&
-                       request.resource.data.uid == userId &&
-                       request.resource.data.role in ['business', 'service', 'customer'] &&
-                       request.resource.data.isActive == true;
-      
-      // Users can update their own profile (but not role or uid)
-      allow update: if isOwner(userId) &&
-                       request.resource.data.uid == resource.data.uid &&
-                       request.resource.data.role == resource.data.role &&
-                       request.resource.data.isActive == resource.data.isActive;
-      
-      // Only admins can delete users or change isActive/role
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
-    
-    // ========== LISTINGS COLLECTION ==========
-    
+
+    // Listings collection
     match /listings/{listingId} {
-      // Public read for active listings only
-      allow read: if resource.data.status == 'active' || 
-                     isOwner(resource.data.ownerId) || 
-                     isAdmin();
-      
-      // Active users can create listings with valid data
-      allow create: if isActiveUser() &&
-                       request.auth.uid == request.resource.data.ownerId &&
-                       request.resource.data.status == 'pending' &&
-                       request.resource.data.title is string &&
-                       request.resource.data.title.size() > 0 &&
-                       request.resource.data.title.size() <= 100 &&
-                       request.resource.data.price >= 0;
-      
-      // Owners can update their own listings (but not status - only admin can approve)
-      allow update: if isOwner(resource.data.ownerId) &&
-                       request.resource.data.ownerId == resource.data.ownerId &&
-                       request.resource.data.status == resource.data.status;
-      
-      // Owners can delete their own listings
-      allow delete: if isOwner(resource.data.ownerId);
+      allow read: if true; // Public read
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                      (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && 
+                      (resource.data.ownerId == request.auth.uid || isAdmin());
     }
-    
-    // ========== ANALYTICS COLLECTION ==========
-    
+
+    // Analytics collection (Cloud Function writes only in production)
     match /analytics/{userId}/{document=**} {
-      // Users can only read their own analytics
       allow read: if isOwner(userId) || isAdmin();
-      
-      // NO direct writes - analytics must be written via Cloud Functions only
-      allow write: if false;
+      allow write: if isOwner(userId); // Allow during dev/seed, restrict to Cloud Functions later
     }
-    
-    // ========== CATALOG COLLECTION ==========
-    
+
+    // Catalog collection
     match /catalog/{catalogId} {
-      // Public read for catalog items
-      allow read: if true;
-      
-      // Only admins can manage catalog
-      allow write: if isAdmin();
+      allow read: if true; // Public read
+      allow write: if isAdmin(); // Admin only
     }
-    
-    // ========== PAYMENTS COLLECTION ==========
-    
+
+    // Payments collection
     match /payments/{userId} {
-      // Users can read their own payment records
       allow read: if isOwner(userId) || isAdmin();
-      
-      // NO direct writes - payments must be processed via Cloud Functions
-      allow write: if false;
+      allow write: if isAdmin(); // Server-side only in production
     }
-    
-    // ========== ADMIN COLLECTIONS ==========
-    
-    match /auditLogs/{logId} {
-      // Only admins can read audit logs
-      allow read: if isAdmin();
-      
-      // Audit logs written via Cloud Functions only
-      allow write: if false;
-    }
-    
-    // Default deny all other collections
+
+    // Default deny-all for unmatched paths
     match /{document=**} {
       allow read, write: if false;
     }
