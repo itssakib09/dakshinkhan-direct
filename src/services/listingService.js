@@ -7,9 +7,13 @@ import {
   startAfter,
   getDocs,
   getDoc,
-  doc
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
 } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { ref, deleteObject } from 'firebase/storage'
+import { db, storage } from '../firebase/config'
 
 const LISTINGS_PER_PAGE = 10
 
@@ -51,7 +55,6 @@ export async function getMyListings(userId, lastDocument = null) {
   }
 }
 
-// NEW: Get store listings (public)
 export async function getStoreListings(userId) {
   try {
     const listingsRef = collection(db, 'listings')
@@ -59,7 +62,7 @@ export async function getStoreListings(userId) {
     const q = query(
       listingsRef,
       where('ownerId', '==', userId),
-      where('status', '==', 'active'), // Only show active listings
+      where('status', '==', 'active'),
       orderBy('createdAt', 'desc')
     )
 
@@ -77,7 +80,6 @@ export async function getStoreListings(userId) {
   }
 }
 
-// NEW: Get store owner info
 export async function getStoreOwner(userId) {
   try {
     const userDoc = await getDoc(doc(db, 'users', userId))
@@ -87,6 +89,57 @@ export async function getStoreOwner(userId) {
     return null
   } catch (error) {
     console.error('Error fetching store owner:', error)
+    throw error
+  }
+}
+
+export async function updateListing(listingId, data) {
+  try {
+    const listingRef = doc(db, 'listings', listingId)
+    await updateDoc(listingRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    })
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating listing:', error)
+    throw error
+  }
+}
+
+export async function deleteListing(listingId, imageUrls = []) {
+  try {
+    if (imageUrls.length > 0) {
+      await Promise.allSettled(
+        imageUrls.map(url => {
+          try {
+            const imageRef = ref(storage, url)
+            return deleteObject(imageRef)
+          } catch (err) {
+            console.warn('Failed to delete image:', url, err)
+            return Promise.resolve()
+          }
+        })
+      )
+    }
+
+    await deleteDoc(doc(db, 'listings', listingId))
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting listing:', error)
+    throw error
+  }
+}
+
+export async function getListing(listingId) {
+  try {
+    const listingDoc = await getDoc(doc(db, 'listings', listingId))
+    if (listingDoc.exists()) {
+      return { id: listingDoc.id, ...listingDoc.data() }
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching listing:', error)
     throw error
   }
 }

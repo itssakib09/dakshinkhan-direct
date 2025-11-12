@@ -4,6 +4,8 @@ import { Button } from '../ui'
 import { useAuth } from '../../context/AuthContext'
 import { getMyListings } from '../../services/listingService'
 import { formatDistanceToNow } from 'date-fns'
+import EditListingModal from './EditListingModal'
+import DeleteConfirmModal from './DeleteConfirmModal'
 
 function MyListingsSection() {
   const { currentUser } = useAuth()
@@ -12,6 +14,10 @@ function MyListingsSection() {
   const [lastDoc, setLastDoc] = useState(null)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Modals
+  const [editingListing, setEditingListing] = useState(null)
+  const [deletingListing, setDeletingListing] = useState(null)
 
   useEffect(() => {
     if (!currentUser) return
@@ -87,6 +93,14 @@ function MyListingsSection() {
         {status}
       </span>
     )
+  }
+
+  function handleEditSuccess() {
+    loadListings()
+  }
+
+  function handleDeleteSuccess(deletedId) {
+    setListings(prev => prev.filter(l => l.id !== deletedId))
   }
 
   if (loading && listings.length === 0) {
@@ -165,10 +179,16 @@ function MyListingsSection() {
                 <p className="text-xs text-gray-500">Created {formatDate(listing.createdAt)}</p>
 
                 <div className="flex gap-2 pt-2">
-                  <button className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1">
+                  <button 
+                    onClick={() => setEditingListing(listing)}
+                    className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+                  >
                     <Edit size={16} /> Edit
                   </button>
-                  <button className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1">
+                  <button 
+                    onClick={() => setDeletingListing(listing)}
+                    className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+                  >
                     <Trash2 size={16} /> Delete
                   </button>
                 </div>
@@ -223,10 +243,18 @@ function MyListingsSection() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button 
+                          onClick={() => setEditingListing(listing)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Edit"
+                        >
                           <Edit size={18} />
                         </button>
-                        <button className="text-red-600 hover:text-red-800">
+                        <button 
+                          onClick={() => setDeletingListing(listing)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Delete"
+                        >
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -249,6 +277,23 @@ function MyListingsSection() {
             </div>
           )}
         </>
+      )}
+
+      {/* Modals */}
+      {editingListing && (
+        <EditListingModal
+          listing={editingListing}
+          onClose={() => setEditingListing(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {deletingListing && (
+        <DeleteConfirmModal
+          listing={deletingListing}
+          onClose={() => setDeletingListing(null)}
+          onSuccess={() => handleDeleteSuccess(deletingListing.id)}
+        />
       )}
     </div>
   )
