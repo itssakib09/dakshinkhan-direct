@@ -23,7 +23,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="categories" element={<Categories />} />
             <Route path="categories/:slug" element={<CategorySingle />} />
-            <Route path="store/:id" element={<Store />} />
+           <Route path="/store/:userId" element={<Store />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route path="about" element={<About />} />

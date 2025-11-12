@@ -5,7 +5,9 @@ import {
   orderBy, 
   limit, 
   startAfter,
-  getDocs 
+  getDocs,
+  getDoc,
+  doc
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
@@ -45,6 +47,46 @@ export async function getMyListings(userId, lastDocument = null) {
     return { listings, lastDoc, hasMore }
   } catch (error) {
     console.error('Error fetching listings:', error)
+    throw error
+  }
+}
+
+// NEW: Get store listings (public)
+export async function getStoreListings(userId) {
+  try {
+    const listingsRef = collection(db, 'listings')
+    
+    const q = query(
+      listingsRef,
+      where('ownerId', '==', userId),
+      where('status', '==', 'active'), // Only show active listings
+      orderBy('createdAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+    
+    const listings = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+    return listings
+  } catch (error) {
+    console.error('Error fetching store listings:', error)
+    throw error
+  }
+}
+
+// NEW: Get store owner info
+export async function getStoreOwner(userId) {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    if (userDoc.exists()) {
+      return { id: userDoc.id, ...userDoc.data() }
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching store owner:', error)
     throw error
   }
 }

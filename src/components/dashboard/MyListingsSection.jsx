@@ -116,7 +116,17 @@ function MyListingsSection() {
           <h2 className="text-3xl font-bold text-gray-900">My Listings</h2>
           <p className="text-gray-600 mt-1">Manage your business listings</p>
         </div>
-        <Button variant="primary">Add New Listing</Button>
+        <div className="flex gap-3">
+          <a
+            href={`/store/${currentUser.uid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          >
+            🏪 View My Store
+          </a>
+          <Button variant="primary">Add New Listing</Button>
+        </div>
       </div>
 
       {listings.length === 0 ? (
