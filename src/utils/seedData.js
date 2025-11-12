@@ -6,28 +6,6 @@ import {
 import { db } from '../firebase/config'
 
 /**
- * Seed sample data to Firestore
- * Run this once to populate the database
- */
-export async function seedFirestore() {
-  console.log('🌱 Starting Firestore seed...')
-  
-  try {
-    // Seed in order: users → listings → analytics → catalog
-    await seedUsers()
-    await seedListings()
-    await seedAnalytics()
-    await seedCatalog()
-    
-    console.log('✅ Firestore seed complete!')
-    return { success: true }
-  } catch (error) {
-    console.error('❌ Seed failed:', error)
-    throw error
-  }
-}
-
-/**
  * Seed sample users
  */
 async function seedUsers() {
@@ -98,7 +76,7 @@ async function seedListings() {
         lng: 90.4121
       },
       images: [],
-      price: 0, // ✅ Changed from null to 0
+      price: 0,
       priceRange: '৳5,000 - ৳50,000',
       rating: 4.5,
       reviewCount: 28,
@@ -115,7 +93,7 @@ async function seedListings() {
         sunday: 'Closed'
       },
       tags: ['electronics', 'mobile', 'laptop', 'accessories'],
-      status: 'pending' // ✅ Changed from 'active' to 'pending' per rules
+      status: 'pending'
     },
     {
       id: 'listing_2',
@@ -166,7 +144,7 @@ async function seedListings() {
         lng: 90.4115
       },
       images: [],
-      price: 0, // ✅ Changed from null
+      price: 0,
       priceRange: '৳20 - ৳500',
       rating: 4.2,
       reviewCount: 67,
@@ -200,7 +178,7 @@ async function seedListings() {
         lng: 90.4125
       },
       images: [],
-      price: 0, // ✅ Changed from null
+      price: 0,
       priceRange: 'Varies',
       rating: 4.6,
       reviewCount: 89,
@@ -363,7 +341,7 @@ async function seedCatalog() {
       id: 'clothing',
       name: 'Clothing & Fashion',
       name_bn: 'পোশাক',
-      icon: '👔',
+      icon: '👕',
       description: 'Clothing stores and fashion',
       subcategories: ['mens', 'womens', 'kids', 'accessories'],
       active: true,
@@ -387,6 +365,175 @@ async function seedCatalog() {
 }
 
 /**
+ * Seed catalog products (pre-loaded items businesses can add)
+ */
+async function seedCatalogProducts() {
+  console.log('📦 Seeding catalog products...')
+  
+  const products = [
+    // Pharmacy products
+    {
+      id: 'napa-500mg',
+      name: 'Napa 500mg',
+      name_bn: 'নাপা ৫০০ মিগ্রা',
+      category: 'pharmacy',
+      subcategory: 'general',
+      defaultPrice: 2,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Napa+500mg',
+      description: 'Paracetamol tablet for fever and pain relief',
+      description_bn: 'জ্বর এবং ব্যথা উপশমের জন্য প্যারাসিটামল ট্যাবলেট',
+      tags: ['medicine', 'paracetamol', 'fever', 'pain'],
+      active: true
+    },
+    {
+      id: 'sergel-20mg',
+      name: 'Sergel 20mg',
+      name_bn: 'সার্জেল ২০ মিগ্রা',
+      category: 'pharmacy',
+      subcategory: 'general',
+      defaultPrice: 5,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Sergel+20mg',
+      description: 'Omeprazole capsule for acidity',
+      description_bn: 'অম্লতার জন্য ওমিপ্রাজল ক্যাপসুল',
+      tags: ['medicine', 'acidity', 'gastric'],
+      active: true
+    },
+    {
+      id: 'seclo-20mg',
+      name: 'Seclo 20mg',
+      name_bn: 'সেক্লো ২০ মিগ্রা',
+      category: 'pharmacy',
+      subcategory: 'general',
+      defaultPrice: 4,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Seclo+20mg',
+      description: 'Omeprazole for gastric problems',
+      description_bn: 'গ্যাস্ট্রিক সমস্যার জন্য ওমিপ্রাজল',
+      tags: ['medicine', 'gastric'],
+      active: true
+    },
+    
+    // Grocery products
+    {
+      id: 'rice-miniket',
+      name: 'Miniket Rice',
+      name_bn: 'মিনিকেট চাল',
+      category: 'grocery',
+      subcategory: 'rice',
+      defaultPrice: 60,
+      unit: 'kg',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Miniket+Rice',
+      description: 'Premium quality miniket rice',
+      description_bn: 'প্রিমিয়াম মানের মিনিকেট চাল',
+      tags: ['rice', 'food', 'staple'],
+      active: true
+    },
+    {
+      id: 'rice-nazirshail',
+      name: 'Nazirshail Rice',
+      name_bn: 'নাজিরশাইল চাল',
+      category: 'grocery',
+      subcategory: 'rice',
+      defaultPrice: 70,
+      unit: 'kg',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Nazirshail+Rice',
+      description: 'Aromatic nazirshail rice',
+      description_bn: 'সুগন্ধি নাজিরশাইল চাল',
+      tags: ['rice', 'aromatic', 'premium'],
+      active: true
+    },
+    {
+      id: 'onion-local',
+      name: 'Local Onion',
+      name_bn: 'দেশি পিঁয়াজ',
+      category: 'grocery',
+      subcategory: 'vegetables',
+      defaultPrice: 80,
+      unit: 'kg',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Local+Onion',
+      description: 'Fresh local onion',
+      description_bn: 'তাজা দেশি পিঁয়াজ',
+      tags: ['vegetables', 'fresh', 'local'],
+      active: true
+    },
+    {
+      id: 'potato-local',
+      name: 'Local Potato',
+      name_bn: 'দেশি আলু',
+      category: 'grocery',
+      subcategory: 'vegetables',
+      defaultPrice: 30,
+      unit: 'kg',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Potato',
+      description: 'Fresh local potato',
+      description_bn: 'তাজা দেশি আলু',
+      tags: ['vegetables', 'fresh', 'staple'],
+      active: true
+    },
+    
+    // Electronics
+    {
+      id: 'samsung-a05',
+      name: 'Samsung Galaxy A05',
+      name_bn: 'স্যামসাং গ্যালাক্সি এ০৫',
+      category: 'electronics',
+      subcategory: 'mobile',
+      defaultPrice: 13500,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Samsung+A05',
+      description: '4GB RAM, 64GB storage, 6.5" display',
+      description_bn: '৪জিবি র‍্যাম, ৬৪জিবি স্টোরেজ, ৬.৫" ডিসপ্লে',
+      tags: ['mobile', 'samsung', 'smartphone'],
+      active: true
+    },
+    {
+      id: 'xiaomi-redmi-13c',
+      name: 'Xiaomi Redmi 13C',
+      name_bn: 'শাওমি রেডমি ১৩সি',
+      category: 'electronics',
+      subcategory: 'mobile',
+      defaultPrice: 12999,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Redmi+13C',
+      description: '4GB RAM, 128GB storage',
+      description_bn: '৪জিবি র‍্যাম, ১২৮জিবি স্টোরেজ',
+      tags: ['mobile', 'xiaomi', 'budget'],
+      active: true
+    },
+    {
+      id: 'walton-primo-h9',
+      name: 'Walton Primo H9',
+      name_bn: 'ওয়ালটন প্রিমো এইচ৯',
+      category: 'electronics',
+      subcategory: 'mobile',
+      defaultPrice: 9999,
+      unit: 'piece',
+      defaultImage: 'https://via.placeholder.com/300x300?text=Walton+H9',
+      description: 'Local brand, 3GB RAM, 32GB storage',
+      description_bn: 'দেশি ব্র্যান্ড, ৩জিবি র‍্যাম, ৩২জিবি স্টোরেজ',
+      tags: ['mobile', 'walton', 'local'],
+      active: true
+    }
+  ]
+
+  const batch = writeBatch(db)
+
+  for (const product of products) {
+    const productRef = doc(db, 'catalogProducts', product.id)
+    batch.set(productRef, {
+      ...product,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+  }
+
+  await batch.commit()
+  console.log(`✅ Seeded ${products.length} catalog products`)
+}
+
+/**
  * Helper: Get last 7 days in YYYY-MM-DD format
  */
 function getLast7Days() {
@@ -397,6 +544,28 @@ function getLast7Days() {
     dates.push(date.toISOString().split('T')[0])
   }
   return dates
+}
+
+/**
+ * Seed sample data to Firestore
+ * Run this once to populate the database
+ */
+export async function seedFirestore() {
+  console.log('🌱 Starting Firestore seed...')
+  
+  try {
+    await seedUsers()
+    await seedListings()
+    await seedAnalytics()
+    await seedCatalog()
+    await seedCatalogProducts()
+    
+    console.log('✅ Firestore seed complete!')
+    return { success: true }
+  } catch (error) {
+    console.error('❌ Seed failed:', error)
+    throw error
+  }
 }
 
 /**

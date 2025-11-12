@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "dakshinkhan-direct"
-  }
+  },
+  "targets": {
+    "dakshinkhan-direct": {
+      "storage": {
+        "rules": [
+          "dakshinkhan-direct.firebasestorage.app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

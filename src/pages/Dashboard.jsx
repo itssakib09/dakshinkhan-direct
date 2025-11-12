@@ -5,7 +5,7 @@ import { getUserProfile, createUserProfile } from '../services/userService'
 import DashboardSidebar from '../components/DashboardSidebar'
 import AnalyticsSection from '../components/dashboard/AnalyticsSection'
 import MyListingsSection from '../components/dashboard/MyListingsSection'
-import AddListingSection from '../components/dashboard/AddListingSection'
+import AddListingForm from '../components/dashboard/AddListingForm'
 import ProfileSection from '../components/dashboard/ProfileSection'
 import PaymentsSection from '../components/dashboard/PaymentsSection'
 
@@ -125,7 +125,7 @@ function Dashboard() {
       case 'my-listings':
         return <MyListingsSection />
       case 'add-listing':
-        return <AddListingSection />
+        return <AddListingForm onSuccess={() => setActiveSection('my-listings')} />
       case 'profile':
         return <ProfileSection />
       case 'payments':
