@@ -6,6 +6,7 @@ import RouteLoader from './components/RouteLoader'
 import Layout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
 
+
 // Lazy load pages
 const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
@@ -18,6 +19,7 @@ const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
 const SeedPage = lazy(() => import('./pages/SeedPage'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const AnalyticsTest = lazy(() => import('./pages/AnalyticsTest'))
 
 function App() {
   return (
@@ -54,7 +56,7 @@ function App() {
 
               {/* Dev only */}
               {import.meta.env.DEV && <Route path="seed" element={<SeedPage />} />}
-
+              {import.meta.env.DEV && <Route path="analytics-test" element={<AnalyticsTest />} />}      
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
