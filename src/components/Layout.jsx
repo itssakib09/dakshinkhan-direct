@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import Footer from './Footer'
+import OfflineIndicator from './OfflineIndicator'
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -23,6 +24,8 @@ function Layout() {
       </div>
 
       <Footer />
+      <OfflineIndicator />
+      
     </div>
   )
 }
