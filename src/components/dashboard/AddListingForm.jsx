@@ -7,15 +7,11 @@ import { uploadMultipleImages } from '../../utils/uploadImage'
 function AddListingForm({ onSuccess }) {
   const { currentUser } = useAuth()
   
-  // Form mode
   const [mode, setMode] = useState('catalog')
-  
-  // Catalog data
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
   
-  // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,78 +26,53 @@ function AddListingForm({ onSuccess }) {
     catalogProductId: ''
   })
   
-  // Images
+  // Enhanced image state
   const [imageFiles, setImageFiles] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
   const [uploadProgress, setUploadProgress] = useState([])
+  const [isDragging, setIsDragging] = useState(false)
   
-  // UI state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
   
-  // Load categories and products on mount
   useEffect(() => {
     loadCatalogData()
   }, [])
   
   async function loadCatalogData() {
-    console.log('📦 Loading catalog data...')
     setCatalogLoading(true)
-    
     try {
-      // Load categories
       const categoriesSnap = await getDocs(collection(db, 'catalog'))
-      const categoriesData = categoriesSnap.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }))
-      
-      console.log('✅ Categories loaded:', categoriesData.length)
+      const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setCategories(categoriesData)
       
-      // Load products
       const productsSnap = await getDocs(collection(db, 'catalogProducts'))
-      const productsData = productsSnap.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }))
-      
-      console.log('✅ Products loaded:', productsData.length)
+      const productsData = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       setProducts(productsData)
       
       if (categoriesData.length === 0) {
         setError('No categories found. Please run seed first.')
       }
-      
     } catch (err) {
-      console.error('❌ Error loading catalog:', err)
       setError(`Failed to load catalog: ${err.message}`)
     } finally {
       setCatalogLoading(false)
     }
   }
   
-  // Filter products by selected category
   useEffect(() => {
     if (formData.category && products.length > 0) {
       const filtered = products.filter(p => p.category === formData.category)
-      console.log(`🔍 Filtered products for ${formData.category}:`, filtered.length)
       setFilteredProducts(filtered)
     } else {
       setFilteredProducts([])
     }
   }, [formData.category, products])
   
-  // Auto-fill from catalog product
   function handleProductSelect(productId) {
-    console.log('📋 Product selected:', productId)
-    
     const product = products.find(p => p.id === productId)
-    
     if (product) {
-      console.log('✅ Auto-filling form with:', product.name)
-      
       setFormData(prev => ({
         ...prev,
         catalogProductId: productId,
@@ -116,82 +87,141 @@ function AddListingForm({ onSuccess }) {
     }
   }
   
-  // Handle image selection
-  function handleImageChange(e) {
-    const files = Array.from(e.target.files).slice(0, 5)
+  // ========== ENHANCED IMAGE HANDLING ==========
+  
+  // Validate single file
+  function validateFile(file) {
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     
-    if (files.length === 0) return
+    const errors = []
     
-    // Validation
-    const invalidFiles = files.filter(file => {
-      const isValidType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)
-      const isValidSize = file.size <= 5 * 1024 * 1024
-      return !isValidType || !isValidSize
+    if (!allowedTypes.includes(file.type)) {
+      errors.push(`${file.name}: Invalid type (only JPG/PNG/WebP allowed)`)
+    }
+    
+    if (file.size > maxSize) {
+      errors.push(`${file.name}: Too large (max 5MB, got ${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+    }
+    
+    return errors
+  }
+  
+  // Process files (from input or drag-drop)
+  function processFiles(files) {
+    const fileArray = Array.from(files)
+    
+    // Limit to 5 total
+    const remainingSlots = 5 - imageFiles.length
+    const filesToAdd = fileArray.slice(0, remainingSlots)
+    
+    if (fileArray.length > remainingSlots) {
+      setError(`Maximum 5 images allowed. Only adding first ${remainingSlots}.`)
+    }
+    
+    // Validate all files
+    const allErrors = []
+    filesToAdd.forEach(file => {
+      const errors = validateFile(file)
+      allErrors.push(...errors)
     })
     
-    if (invalidFiles.length > 0) {
-      setError('Some images are invalid (only JPG/PNG/WebP, max 5MB each)')
+    if (allErrors.length > 0) {
+      setError(allErrors.join('\n'))
       return
     }
     
-    setImageFiles(files)
-    setUploadProgress(new Array(files.length).fill(0))
+    // Add files
+    const newFiles = [...imageFiles, ...filesToAdd]
+    setImageFiles(newFiles)
+    setUploadProgress([...uploadProgress, ...new Array(filesToAdd.length).fill(0)])
     
     // Generate previews
-    const previews = files.map(file => URL.createObjectURL(file))
-    setImagePreviews(previews)
+    const newPreviews = filesToAdd.map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      size: file.size
+    }))
+    setImagePreviews([...imagePreviews, ...newPreviews])
     setError(null)
   }
   
+  // Handle file input change
+  function handleImageChange(e) {
+    if (e.target.files.length > 0) {
+      processFiles(e.target.files)
+    }
+  }
+  
+  // Drag & drop handlers
+  function handleDragEnter(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+  
+  function handleDragLeave(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+  
+  function handleDragOver(e) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  
+  function handleDrop(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files)
+    }
+  }
+  
+  // Remove single image
   function removeImage(index) {
+    URL.revokeObjectURL(imagePreviews[index].url)
     setImageFiles(prev => prev.filter((_, i) => i !== index))
     setImagePreviews(prev => prev.filter((_, i) => i !== index))
     setUploadProgress(prev => prev.filter((_, i) => i !== index))
   }
+  
+  // Format file size
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+  }
+  
+  // ========== FORM SUBMIT ==========
   
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     setError(null)
     
-    console.log('🚀 Submitting listing...')
-    
     try {
-      // Validation
-      if (!formData.title.trim()) {
-        throw new Error('Title is required')
-      }
+      if (!formData.title.trim()) throw new Error('Title is required')
+      if (!formData.category) throw new Error('Category is required')
+      if (!formData.price || parseFloat(formData.price) < 0) throw new Error('Valid price is required')
+      if (imageFiles.length === 0) throw new Error('Please upload at least one image')
       
-      if (!formData.category) {
-        throw new Error('Category is required')
-      }
-      
-      if (!formData.price || parseFloat(formData.price) < 0) {
-        throw new Error('Valid price is required')
-      }
-      
-      if (imageFiles.length === 0) {
-        throw new Error('Please upload at least one image')
-      }
-      
-      console.log('📤 Uploading images...')
-      
-      // Upload images
+      // Upload images with progress tracking
       const imageURLs = await uploadMultipleImages(
         imageFiles,
         `listings/${currentUser.uid}/`,
         (index, progress) => {
           setUploadProgress(prev => {
             const newProgress = [...prev]
-            newProgress[index] = progress
+            newProgress[index] = Math.round(progress)
             return newProgress
           })
         }
       )
       
-      console.log('✅ Images uploaded:', imageURLs.length)
-      
-      // Create listing document
       const listingData = {
         ownerId: currentUser.uid,
         title: formData.title.trim(),
@@ -216,13 +246,8 @@ function AddListingForm({ onSuccess }) {
         updatedAt: serverTimestamp()
       }
       
-      console.log('💾 Saving to Firestore...')
-      
       await addDoc(collection(db, 'listings'), listingData)
       
-      console.log('✅ Listing created successfully!')
-      
-      // Success callback
       if (onSuccess) onSuccess()
       
       // Reset form
@@ -239,6 +264,9 @@ function AddListingForm({ onSuccess }) {
         tags: '',
         catalogProductId: ''
       })
+      
+      // Clear images and revoke URLs
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.url))
       setImageFiles([])
       setImagePreviews([])
       setUploadProgress([])
@@ -246,14 +274,14 @@ function AddListingForm({ onSuccess }) {
       alert('✅ Listing created successfully! Pending admin approval.')
       
     } catch (err) {
-      console.error('❌ Error creating listing:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
   
-  // Render loading state
+  // ========== RENDER ==========
+  
   if (catalogLoading) {
     return (
       <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow">
@@ -275,10 +303,7 @@ function AddListingForm({ onSuccess }) {
       <div className="flex gap-4 mb-6">
         <button
           type="button"
-          onClick={() => {
-            console.log('🔄 Switching to catalog mode')
-            setMode('catalog')
-          }}
+          onClick={() => setMode('catalog')}
           className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${
             mode === 'catalog'
               ? 'bg-blue-600 text-white'
@@ -289,10 +314,7 @@ function AddListingForm({ onSuccess }) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            console.log('🔄 Switching to custom mode')
-            setMode('custom')
-          }}
+          onClick={() => setMode('custom')}
           className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${
             mode === 'custom'
               ? 'bg-blue-600 text-white'
@@ -304,14 +326,14 @@ function AddListingForm({ onSuccess }) {
       </div>
       
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 whitespace-pre-line">
           <strong>Error:</strong> {error}
         </div>
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* Catalog Mode: Product Selection */}
+        {/* Catalog/Custom Mode Fields */}
         {mode === 'catalog' && (
           <div className="space-y-4">
             <div>
@@ -320,14 +342,7 @@ function AddListingForm({ onSuccess }) {
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => {
-                  console.log('📂 Category selected:', e.target.value)
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    category: e.target.value, 
-                    catalogProductId: '' 
-                  }))
-                }}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value, catalogProductId: '' }))}
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               >
@@ -360,16 +375,9 @@ function AddListingForm({ onSuccess }) {
                 </select>
               </div>
             )}
-            
-            {formData.category && filteredProducts.length === 0 && (
-              <p className="text-sm text-amber-600">
-                No products found for this category. Switch to "Custom Listing" mode.
-              </p>
-            )}
           </div>
         )}
         
-        {/* Custom Mode: Category Selection */}
         {mode === 'custom' && (
           <div>
             <label className="block text-sm font-medium mb-2">Category *</label>
@@ -491,57 +499,143 @@ function AddListingForm({ onSuccess }) {
           />
         </div>
         
-        {/* Image Upload */}
+        {/* ========== ENHANCED IMAGE UPLOAD ========== */}
         <div>
           <label className="block text-sm font-medium mb-2">
             Images * (Max 5, JPG/PNG/WebP, max 5MB each)
           </label>
-          <input
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            multiple
-            onChange={handleImageChange}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
           
-          {/* Image Previews */}
+          {/* Drag & Drop Zone */}
+          <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400'
+            } ${imageFiles.length >= 5 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => imageFiles.length < 5 && document.getElementById('file-input').click()}
+          >
+            <input
+              id="file-input"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              onChange={handleImageChange}
+              className="hidden"
+              disabled={imageFiles.length >= 5}
+            />
+            
+            <div className="flex flex-col items-center">
+              <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-gray-600 font-medium">
+                {imageFiles.length >= 5
+                  ? 'Maximum 5 images reached'
+                  : 'Drag & drop images here or click to browse'}
+              </p>
+              <p className="text-gray-500 text-sm mt-1">
+                {5 - imageFiles.length} slot{5 - imageFiles.length !== 1 ? 's' : ''} remaining
+              </p>
+            </div>
+          </div>
+          
+          {/* Image Previews with Progress */}
           {imagePreviews.length > 0 && (
-            <div className="mt-4 grid grid-cols-5 gap-4">
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {imagePreviews.map((preview, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg"
-                  />
+                <div key={index} className="relative group">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                    <img
+                      src={preview.url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  {/* Remove button */}
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                    disabled={loading}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    title="Remove image"
                   >
                     ×
                   </button>
-                  {loading && uploadProgress[index] > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-blue-500 h-1">
+                  
+                  {/* File info overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-xs p-1.5 opacity-0 group-hover:opacity-100 transition">
+                    <p className="truncate">{preview.name}</p>
+                    <p className="text-gray-300">{formatFileSize(preview.size)}</p>
+                  </div>
+                  
+                  {/* Upload progress bar */}
+                  {loading && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
                       <div
-                        className="bg-green-500 h-full transition-all"
-                        style={{ width: `${uploadProgress[index]}%` }}
+                        className="h-full bg-green-500 transition-all duration-300"
+                        style={{ width: `${uploadProgress[index] || 0}%` }}
                       />
+                    </div>
+                  )}
+                  
+                  {/* Upload status indicator */}
+                  {loading && uploadProgress[index] === 100 && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      ✓
                     </div>
                   )}
                 </div>
               ))}
             </div>
           )}
+          
+          {/* Overall upload progress */}
+          {loading && imageFiles.length > 0 && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-800">
+                  Uploading images...
+                </span>
+                <span className="text-sm text-blue-600">
+                  {uploadProgress.filter(p => p === 100).length}/{imageFiles.length} complete
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${
+                      uploadProgress.reduce((sum, p) => sum + p, 0) / imageFiles.length
+                    }%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition"
+          disabled={loading || imageFiles.length === 0}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition flex items-center justify-center"
         >
-          {loading ? 'Creating Listing...' : '✅ Create Listing'}
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating Listing...
+            </>
+          ) : (
+            '✅ Create Listing'
+          )}
         </button>
       </form>
     </div>
