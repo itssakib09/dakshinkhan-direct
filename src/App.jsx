@@ -6,7 +6,6 @@ import RouteLoader from './components/RouteLoader'
 import Layout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
 
-
 // Lazy load pages
 const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
@@ -28,22 +27,18 @@ function App() {
         <Router>
           <Suspense fallback={<RouteLoader />}>
             <Routes>
-              {/* Public routes with layout */}
+              {/* All routes with layout (including login/signup) */}
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
+                <Route path="login" element={<Login />} />
+                <Route path="signup" element={<Signup />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="category/:id" element={<CategorySingle />} />
                 <Route path="about" element={<About />} />
                 <Route path="contact" element={<Contact />} />
                 <Route path="store/:userId" element={<Store />} />
-              </Route>
-
-              {/* Auth routes without layout */}
-              <Route path="login" element={<Login />} />
-              <Route path="signup" element={<Signup />} />
-
-              {/* Protected routes with layout */}
-              <Route path="/" element={<Layout />}>
+                
+                {/* Protected route */}
                 <Route
                   path="dashboard"
                   element={
@@ -54,9 +49,10 @@ function App() {
                 />
               </Route>
 
-              {/* Dev only */}
+              {/* Dev only - no layout */}
               {import.meta.env.DEV && <Route path="seed" element={<SeedPage />} />}
-              {import.meta.env.DEV && <Route path="analytics-test" element={<AnalyticsTest />} />}      
+              {import.meta.env.DEV && <Route path="analytics-test" element={<AnalyticsTest />} />}
+              
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>

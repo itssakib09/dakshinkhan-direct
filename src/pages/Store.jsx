@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Phone, Mail, MapPin, Eye, Star } from 'lucide-react'
 import { getStoreListings, getStoreOwner } from '../services/listingService'
+import { trackView, trackCall, trackEmail } from '../services/trackingService'
 
 function Store() {
   const { userId } = useParams()
@@ -31,12 +32,27 @@ function Store() {
 
       setOwner(ownerData)
       setListings(listingsData)
+
+      // Track views for all listings on store page load
+      if (listingsData.length > 0) {
+        listingsData.forEach(listing => {
+          trackView(listing.id, userId)
+        })
+      }
     } catch (err) {
       console.error('Error loading store:', err)
       setError('Failed to load store')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleCallClick(listing) {
+    trackCall(listing.id, userId)
+  }
+
+  function handleEmailClick(listing) {
+    trackEmail(listing.id, userId)
   }
 
   if (loading) {
@@ -185,19 +201,23 @@ function Store() {
                   </div>
                 )}
 
-                {/* Contact Buttons */}
+                {/* Contact Buttons with Tracking */}
                 <div className="flex gap-2">
                   <a
                     href={`tel:${listing.phone}`}
+                    onClick={() => handleCallClick(listing)}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-lg font-medium transition"
                   >
+                    <Phone size={16} className="inline mr-1" />
                     Call Now
                   </a>
                   {listing.email && (
                     <a
                       href={`mailto:${listing.email}`}
+                      onClick={() => handleEmailClick(listing)}
                       className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2 rounded-lg font-medium transition"
                     >
+                      <Mail size={16} className="inline mr-1" />
                       Email
                     </a>
                   )}
