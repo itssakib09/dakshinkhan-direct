@@ -1,119 +1,161 @@
 import { Link } from 'react-router-dom'
-import { Menu, MapPin, LogOut, User } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { HiBell, HiLogout, HiUser, HiSun, HiMoon } from 'react-icons/hi'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 
-function Header({ onMenuClick }) {
+function Header() {
   const { currentUser, userProfile, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+  // Removed: const [showThemeMenu, setShowThemeMenu] = useState(false)
 
   async function handleLogout() {
     try {
-      console.log('🔵 [Header] Logout clicked')
       await logout()
-      console.log('✅ [Header] Logout successful')
       window.location.href = '/login'
     } catch (error) {
-      console.error('❌ [Header] Logout failed:', error)
+      console.error('Logout failed:', error)
       alert('Failed to logout. Please try again.')
     }
   }
 
   return (
-    <header className="bg-blue-600 text-white shadow-md sticky top-0 z-30">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Left: Hamburger + Logo */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onMenuClick}
-              className="lg:hidden p-2 hover:bg-blue-700 rounded"
-              aria-label="Toggle menu"
+    <motion.header
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="bg-white dark:bg-gray-900 backdrop-blur-xl shadow-lg sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300"
+    >
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30"
             >
-              <Menu size={24} />
-            </button>
-            
-            <Link to="/" className="flex items-center gap-2">
-              <MapPin size={28} />
-              <div>
-                <h1 className="text-xl font-bold leading-tight">
-                  Dakshinkhan Direct
-                </h1>
-                <p className="text-xs text-blue-200">Local Business Directory</p>
-              </div>
-            </Link>
-          </div>
+              <svg className="w-5 h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </motion.div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+                Dakshinkhan
+              </h1>
+              <p className="text-xs font-medium text-primary-600/70 tracking-wider">DIRECT</p>
+            </div>
+          </Link>
 
-          {/* Right: User Info or Auth Links */}
-          <nav className="hidden md:flex items-center gap-4">
+          {/* Right Side */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Desktop Auth */}
             {currentUser ? (
-              <div className="flex items-center gap-4">
-                {/* User Avatar/Name */}
-                <Link to="/dashboard" className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition">
-                  {userProfile?.photoURL ? (
-                    <img 
-                      src={userProfile.photoURL} 
-                      alt={userProfile.displayName}
-                      className="w-8 h-8 rounded-full border-2 border-white"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
-                      <User size={18} />
-                    </div>
-                  )}
-                  <span className="text-sm font-medium">
-                    {userProfile?.displayName || currentUser.email}
-                  </span>
+              <div className="hidden md:flex items-center gap-3">
+                <Link to="/dashboard">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700 hover:from-primary-100 hover:to-primary-200 dark:hover:from-gray-700 dark:hover:to-gray-600 rounded-xl transition-all duration-300 border border-primary-200/50 dark:border-gray-600"
+                  >
+                    {userProfile?.photoURL ? (
+                      <img 
+                        src={userProfile.photoURL} 
+                        alt={userProfile.displayName}
+                        className="w-8 h-8 rounded-full ring-2 ring-primary-400/30"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shadow-md">
+                        <HiUser size={18} className="text-white" />
+                      </div>
+                    )}
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {userProfile?.displayName || 'Profile'}
+                    </span>
+                  </motion.div>
                 </Link>
-
-                {/* Logout Button */}
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-blue-700 rounded transition"
+                  className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors duration-300 group"
                   title="Logout"
                 >
-                  <LogOut size={18} />
-                  <span className="text-sm">Logout</span>
-                </button>
+                  <HiLogout size={20} className="text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform" />
+                </motion.button>
               </div>
             ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 hover:bg-blue-700 rounded transition"
-                >
-                  Login
+              <div className="hidden md:flex items-center gap-2">
+                <Link to="/login">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-gray-800 rounded-xl transition-all duration-300"
+                  >
+                    Login
+                  </motion.button>
                 </Link>
-                <Link
-                  to="/signup"
-                  className="px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded font-semibold transition"
-                >
-                  Sign Up
+                <Link to="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.02, boxShadow: "0 10px 30px -10px rgba(34, 197, 94, 0.5)" }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl shadow-lg shadow-primary-500/30 transition-all duration-300"
+                  >
+                    Sign Up
+                  </motion.button>
                 </Link>
-              </>
+              </div>
             )}
-          </nav>
 
-          {/* Mobile User Menu */}
-          <div className="flex md:hidden gap-2">
-            {currentUser ? (
-              <button
-                onClick={handleLogout}
-                className="text-sm px-3 py-1 hover:bg-blue-700 rounded flex items-center gap-1"
+            {/* Dark Mode Toggle */}
+            <div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={toggleTheme}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-300 shadow-md group"
               >
-                <LogOut size={16} />
-                Logout
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="text-sm px-3 py-1 hover:bg-blue-700 rounded"
-              >
-                Login
-              </Link>
-            )}
+                <AnimatePresence mode="wait">
+                  {theme === 'dark' ? (
+                    <motion.div
+                      key="moon"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <HiMoon size={20} className="text-primary-500 group-hover:scale-110 transition-transform" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="sun"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <HiSun size={20} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+
+            {/* Notification Bell */}
+            <motion.button
+              whileHover={{ scale: 1.05, rotate: 10 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700 hover:from-primary-100 hover:to-primary-200 dark:hover:from-gray-700 dark:hover:to-gray-600 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg group"
+            >
+              <HiBell size={20} className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                3
+              </span>
+            </motion.button>
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }
 

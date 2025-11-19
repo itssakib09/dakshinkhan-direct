@@ -1,65 +1,122 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import ErrorBoundary from './components/ErrorBoundary'
-import RouteLoader from './components/RouteLoader'
+import { ThemeProvider } from './context/ThemeContext'
+import { AnimatePresence } from 'framer-motion'
 import Layout from './components/Layout'
-import PrivateRoute from './components/PrivateRoute'
+import ProtectedRoute from './components/PrivateRoute'
+import PageTransition from './components/PageTransition'
 
 // Lazy load pages
+import { lazy, Suspense } from 'react'
+import SkeletonCard from './components/SkeletonCard'
+
 const Home = lazy(() => import('./pages/Home'))
+const Categories = lazy(() => import('./pages/Categories'))
+const CategorySingle = lazy(() => import('./pages/CategorySingle'))
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Store = lazy(() => import('./pages/Store'))
-const Categories = lazy(() => import('./pages/Categories'))
-const CategorySingle = lazy(() => import('./pages/CategorySingle'))
+const Admin = lazy(() => import('./pages/Admin'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
+const ComponentDemo = lazy(() => import('./pages/ComponentDemo'))
 const SeedPage = lazy(() => import('./pages/SeedPage'))
-const NotFound = lazy(() => import('./pages/NotFound'))
-const AnalyticsTest = lazy(() => import('./pages/AnalyticsTest'))
+
+function AnimatedRoutes() {
+  const location = useLocation()
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Layout />}>
+          <Route index element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Home /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="categories" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Categories /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="categories/:slug" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><CategorySingle /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="store/:id" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Store /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="login" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Login /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="signup" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Signup /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="about" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><About /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="contact" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Contact /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="components" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><ComponentDemo /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="/seed" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><SeedPage /></PageTransition>
+            </Suspense>
+          } />
+          
+          {/* Protected Routes */}
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+                  <PageTransition><Dashboard /></PageTransition>
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+                  <PageTransition><Admin /></PageTransition>
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+      </Routes>
+    </AnimatePresence>
+  )
+}
 
 function App() {
   return (
-    <ErrorBoundary>
+    <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Suspense fallback={<RouteLoader />}>
-            <Routes>
-              {/* All routes with layout (including login/signup) */}
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Home />} />
-                <Route path="login" element={<Login />} />
-                <Route path="signup" element={<Signup />} />
-                <Route path="categories" element={<Categories />} />
-                <Route path="category/:id" element={<CategorySingle />} />
-                <Route path="about" element={<About />} />
-                <Route path="contact" element={<Contact />} />
-                <Route path="store/:userId" element={<Store />} />
-                
-                {/* Protected route */}
-                <Route
-                  path="dashboard"
-                  element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  }
-                />
-              </Route>
-
-              {/* Dev only - no layout */}
-              {import.meta.env.DEV && <Route path="seed" element={<SeedPage />} />}
-              {import.meta.env.DEV && <Route path="analytics-test" element={<AnalyticsTest />} />}
-              
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </Router>
+        <BrowserRouter>
+          <AnimatedRoutes />
+        </BrowserRouter>
       </AuthProvider>
-    </ErrorBoundary>
+    </ThemeProvider>
   )
 }
 
