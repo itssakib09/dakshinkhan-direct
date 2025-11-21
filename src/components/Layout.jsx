@@ -17,30 +17,24 @@ function Layout() {
     closeSidebar()
   }, [location.pathname])
 
-  // Determine if sidebar should be shown
+  // Determine if sidebar should be shown (not on homepage)
   const showSidebar = location.pathname !== '/'
 
   return (
     <div className="flex flex-col min-h-screen">
       <OfflineIndicator />
-      <Header onMenuClick={toggleSidebar} />
+      <Header onMenuClick={toggleSidebar} showMenuButton={showSidebar} />
       
       <div className="flex flex-1">
-        {/* Show Sidebar on Desktop (except homepage), Toggle on Mobile */}
+        {/* Desktop Sidebar - Always visible except homepage */}
         {showSidebar && (
           <div className="hidden lg:block">
-            <Sidebar isOpen={true} onClose={closeSidebar} />
-          </div>
-        )}
-        
-        {/* Mobile Sidebar Overlay */}
-        {showSidebar && (
-          <div className="lg:hidden">
             <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
           </div>
         )}
         
-        <main className="flex-1">
+        {/* Main Content */}
+        <main className="flex-1 w-full">
           <Outlet />
         </main>
       </div>

@@ -16,25 +16,12 @@ function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Mobile Overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar - Always visible on desktop, toggle on mobile */}
+      {/* Desktop Sidebar - No overlay needed */}
       <aside
         className={`
           fixed lg:static top-0 left-0 h-full z-50 w-64 sm:w-72
           bg-white dark:bg-gray-900 shadow-2xl
-          transition-all duration-300 ease-in-out
+          transition-transform duration-200 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -74,11 +61,11 @@ function Sidebar({ isOpen, onClose }) {
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03, duration: 0.2 }}
                   whileHover={{ scale: 1.02, x: 5 }}
                   whileTap={{ scale: 0.98 }}
                   className={`
-                    relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 cursor-pointer
+                    relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200 cursor-pointer
                     ${
                       active
                         ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/30'
@@ -88,7 +75,7 @@ function Sidebar({ isOpen, onClose }) {
                 >
                   <div
                     className={`
-                      w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300
+                      w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200
                       ${
                         active
                           ? 'bg-white/20 backdrop-blur-sm'
@@ -110,7 +97,7 @@ function Sidebar({ isOpen, onClose }) {
                     <motion.div
                       layoutId="activeIndicator"
                       className="absolute right-3 sm:right-4 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full shadow-lg"
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                     />
                   )}
                 </motion.div>
@@ -135,6 +122,20 @@ function Sidebar({ isOpen, onClose }) {
           </p>
         </div>
       </aside>
+
+      {/* Mobile Overlay - Only on mobile when sidebar is open */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

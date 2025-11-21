@@ -25,7 +25,7 @@ function Footer() {
   return (
     <footer className="hidden lg:block relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 dark:from-gray-900 dark:via-gray-800 dark:to-black transition-colors duration-300">
       
-      <div className="relative container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-6 sm:mb-8">
           
           {/* Brand Section */}
@@ -110,13 +110,13 @@ function Footer() {
                 <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white/10 rounded-lg flex items-center justify-center group-hover:bg-white/20 transition-colors flex-shrink-0">
                   <HiPhone size={16} className="text-primary-300" />
                 </div>
-                <span>+880 123-456-7890</span>
+                <span className="break-all">+880 123-456-7890</span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-primary-100/80 hover:text-white transition-colors group">
                 <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white/10 rounded-lg flex items-center justify-center group-hover:bg-white/20 transition-colors flex-shrink-0">
                   <HiMail size={16} className="text-primary-300" />
                 </div>
-                <span>info@dakshinkhan.direct</span>
+                <span className="break-all">info@dakshinkhan.direct</span>
               </div>
               <div className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-primary-100/80 hover:text-white transition-colors group">
                 <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white/10 rounded-lg flex items-center justify-center group-hover:bg-white/20 transition-colors flex-shrink-0">
@@ -141,16 +141,16 @@ function Footer() {
             <p className="text-xs sm:text-sm text-primary-100/80 mb-3 sm:mb-4">
               Subscribe to get updates on new businesses and offers.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="email"
                 placeholder="Your email"
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-primary-300/50 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-all text-xs sm:text-sm"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-primary-300/50 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-all text-xs sm:text-sm"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white hover:bg-primary-50 text-primary-700 font-semibold rounded-lg sm:rounded-xl shadow-lg transition-all duration-300 text-xs sm:text-sm whitespace-nowrap"
+                className="w-full px-4 sm:px-5 py-2 sm:py-2.5 bg-white hover:bg-primary-50 text-primary-700 font-semibold rounded-lg sm:rounded-xl shadow-lg transition-all duration-300 text-xs sm:text-sm"
               >
                 Subscribe
               </motion.button>
