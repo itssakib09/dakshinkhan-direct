@@ -4,7 +4,7 @@ import { HiBell, HiLogout, HiUser, HiSun, HiMoon, HiMenu } from 'react-icons/hi'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
-function Header({ onMenuClick, showMenuButton = false }) {
+function Header({ onMenuClick }) {
   const { currentUser, userProfile, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
 
@@ -22,18 +22,18 @@ function Header({ onMenuClick, showMenuButton = false }) {
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="bg-white dark:bg-gray-900 backdrop-blur-xl shadow-lg sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300"
+      className="bg-white dark:bg-gray-900 backdrop-blur-xl shadow-lg sticky top-0 z-[100] border-b border-gray-200 dark:border-gray-800 transition-colors duration-300"
     >
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+      <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
-          {/* Left Side - Menu Button + Logo */}
+          {/* Left Side - Menu Button (Tablet only) + Logo */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Desktop Menu Button - Always show on desktop */}
+            {/* Menu Button - Show ONLY on tablet (768px-1023px) - ALL PAGES */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onMenuClick}
-              className="hidden lg:flex w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 items-center justify-center transition-colors"
+              className="hidden md:flex lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 items-center justify-center transition-colors"
             >
               <HiMenu size={20} className="text-gray-700 dark:text-gray-300" />
             </motion.button>
