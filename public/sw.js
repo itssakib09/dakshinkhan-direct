@@ -1,36 +1,37 @@
-const CACHE_NAME = 'dakshinkhan-direct-cache';
-const CORE_ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = `dkd-cache-${Date.now()}`;
+
+// Cache only static assets needed offline — NOT HTML!
+const ASSETS_TO_CACHE = [
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
+];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
+// Delete ALL old caches on every new deployment
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
+      Promise.all(keys.map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
+// Network-first strategy for everything.
+// If offline → fallback to cache only if available
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // ❗ Always bypass cache for .js, .css, and static build assets
-  if (/\.(js|css|json)$/.test(url.pathname) || url.pathname.startsWith('/assets/')) {
-    return event.respondWith(fetch(event.request));
-  }
-
-  // Cache first for HTML + static UI
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
