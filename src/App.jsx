@@ -22,6 +22,7 @@ const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
 const ComponentDemo = lazy(() => import('./pages/ComponentDemo'))
 const SeedPage = lazy(() => import('./pages/SeedPage'))
+const Locations = lazy(() => import('./pages/Locations'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -80,6 +81,11 @@ function AnimatedRoutes() {
               <PageTransition><SeedPage /></PageTransition>
             </Suspense>
           } />
+          <Route path="locations" element={
+  <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+    <PageTransition><Locations /></PageTransition>
+  </Suspense>
+} />
           
           {/* Protected Routes */}
           <Route

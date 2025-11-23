@@ -184,12 +184,14 @@ function Sidebar({ isOpen, onClose }) {
 
                         {/* Active Dot Indicator */}
                         {active && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute right-4 w-2 h-2 bg-white rounded-full shadow-lg"
-                          />
-                        )}
+  <motion.div
+    layoutId="activeIndicator"
+    className="absolute left-0 top-0 bottom-0 my-auto h-8 w-1 bg-white rounded-r-full shadow-lg"
+    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+    style={{ marginTop: 'auto', marginBottom: 'auto' }}
+  />
+)}
+
 
                         {/* Hover Glow Effect */}
                         {!active && (

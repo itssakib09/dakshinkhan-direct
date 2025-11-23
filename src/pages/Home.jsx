@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
@@ -15,6 +15,7 @@ import {
 } from 'react-icons/hi'
 
 function Home() {
+  const navigate = useNavigate()
   const categories = [
     { id: 'food', name: 'Food', icon: '🍽️' },
     { id: 'shopping', name: 'Shopping', icon: '🛍️' },
@@ -46,7 +47,8 @@ function Home() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
+
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Hero Location Card */}
@@ -66,7 +68,10 @@ function Home() {
               </p>
             </div>
             
-            <button className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl py-4 sm:py-5 px-4 flex items-center justify-between shadow-lg transition-all">
+            <button 
+  onClick={() => navigate('/locations')}
+  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl py-4 sm:py-5 px-4 flex items-center justify-between shadow-lg transition-all"
+>
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <HiLocationMarker className="text-white" size={20} />
