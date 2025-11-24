@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { LocationProvider } from './context/LocationContext'
 import { AnimatePresence } from 'framer-motion'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/PrivateRoute'
@@ -82,10 +83,10 @@ function AnimatedRoutes() {
             </Suspense>
           } />
           <Route path="locations" element={
-  <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
-    <PageTransition><Locations /></PageTransition>
-  </Suspense>
-} />
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Locations /></PageTransition>
+            </Suspense>
+          } />
           
           {/* Protected Routes */}
           <Route
@@ -118,9 +119,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
+        <LocationProvider>
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </LocationProvider>
       </AuthProvider>
     </ThemeProvider>
   )

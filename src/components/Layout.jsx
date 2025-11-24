@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import Footer from './Footer'
 import BottomNav from './ui/BottomNav'
 import OfflineIndicator from './OfflineIndicator'
+import LocationNotification from './LocationNotification'
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -22,6 +23,7 @@ function Layout() {
   return (
     <div className="flex flex-col min-h-screen">
       <OfflineIndicator />
+      <LocationNotification />
       <Header onMenuClick={toggleSidebar} />
       
       <div className="flex flex-1 relative">

@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   HiHome, 
@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 
 function Sidebar({ isOpen, onClose }) {
-  const location = useLocation()
+  const location = useRouterLocation()
   const navigate = useNavigate()
   const { userProfile } = useAuth()
   const userRole = userProfile?.role || 'customer'
@@ -40,8 +40,8 @@ function Sidebar({ isOpen, onClose }) {
       default: // customer
         return [
           { path: '/', icon: HiHome, label: 'Home' },
-          { path: '/categories', icon: HiViewGrid, label: 'Categories' },
-          { path: '/store', icon: HiShoppingBag, label: 'Stores' },
+          { path: '/business', icon: HiShoppingBag, label: 'Business' },
+          { path: '/services', icon: HiBriefcase, label: 'Services' },
           { path: '/profile', icon: HiUser, label: 'Profile' },
         ]
     }
@@ -181,17 +181,6 @@ function Sidebar({ isOpen, onClose }) {
                         <span className={`font-semibold text-base ${active ? 'font-bold' : 'group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                           {item.label}
                         </span>
-
-                        {/* Active Dot Indicator */}
-                        {active && (
-  <motion.div
-    layoutId="activeIndicator"
-    className="absolute left-0 top-0 bottom-0 my-auto h-8 w-1 bg-white rounded-r-full shadow-lg"
-    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-    style={{ marginTop: 'auto', marginBottom: 'auto' }}
-  />
-)}
-
 
                         {/* Hover Glow Effect */}
                         {!active && (

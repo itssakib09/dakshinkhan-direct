@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
 import { 
   HiHome,
-  HiViewGrid,
-  HiUser,
   HiShoppingBag,
+  HiUser,
   HiCog,
-  HiChartSquareBar
+  HiChartSquareBar,
+  HiBriefcase
 } from 'react-icons/hi'
 import { useAuth } from '../../context/AuthContext'
 
@@ -37,7 +37,7 @@ function BottomNav() {
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/store') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
                 <HiShoppingBag size={20} className={isActive('/store') ? 'text-white' : ''} />
               </div>
-              <span className={`text-xs ${isActive('/store') ? 'font-bold' : ''}`}>Store</span>
+              <span className={`text-xs ${isActive('/store') ? 'font-bold' : ''}`}>My Store</span>
             </Link>
             <Link to="/settings" className={`flex flex-col items-center space-y-1 ${isActive('/settings') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/settings') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
@@ -60,11 +60,11 @@ function BottomNav() {
               </div>
               <span className={`text-xs ${isActive('/dashboard') ? 'font-bold' : ''}`}>Dashboard</span>
             </Link>
-            <Link to="/profile" className={`flex flex-col items-center space-y-1 ${isActive('/profile') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/profile') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                <HiUser size={20} className={isActive('/profile') ? 'text-white' : ''} />
+            <Link to="/portfolio" className={`flex flex-col items-center space-y-1 ${isActive('/portfolio') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/portfolio') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <HiBriefcase size={20} className={isActive('/portfolio') ? 'text-white' : ''} />
               </div>
-              <span className={`text-xs ${isActive('/profile') ? 'font-bold' : ''}`}>Profile</span>
+              <span className={`text-xs ${isActive('/portfolio') ? 'font-bold' : ''}`}>Portfolio</span>
             </Link>
             <Link to="/settings" className={`flex flex-col items-center space-y-1 ${isActive('/settings') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/settings') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
@@ -81,17 +81,17 @@ function BottomNav() {
               </div>
               <span className={`text-xs ${isActive('/') ? 'font-bold' : ''}`}>Home</span>
             </Link>
-            <Link to="/categories" className={`flex flex-col items-center space-y-1 ${isActive('/categories') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/categories') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                <HiViewGrid size={20} className={isActive('/categories') ? 'text-white' : ''} />
+            <Link to="/business" className={`flex flex-col items-center space-y-1 ${isActive('/business') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/business') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <HiShoppingBag size={20} className={isActive('/business') ? 'text-white' : ''} />
               </div>
-              <span className={`text-xs ${isActive('/categories') ? 'font-bold' : ''}`}>Categories</span>
+              <span className={`text-xs ${isActive('/business') ? 'font-bold' : ''}`}>Business</span>
             </Link>
-            <Link to="/store" className={`flex flex-col items-center space-y-1 ${isActive('/store') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/store') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                <HiShoppingBag size={20} className={isActive('/store') ? 'text-white' : ''} />
+            <Link to="/services" className={`flex flex-col items-center space-y-1 ${isActive('/services') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/services') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <HiBriefcase size={20} className={isActive('/services') ? 'text-white' : ''} />
               </div>
-              <span className={`text-xs ${isActive('/store') ? 'font-bold' : ''}`}>Stores</span>
+              <span className={`text-xs ${isActive('/services') ? 'font-bold' : ''}`}>Services</span>
             </Link>
             <Link to="/profile" className={`flex flex-col items-center space-y-1 ${isActive('/profile') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors`}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isActive('/profile') ? 'bg-gradient-to-br from-primary-500 to-primary-700' : 'bg-gray-100 dark:bg-gray-800'}`}>
