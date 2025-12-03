@@ -1,6 +1,9 @@
 import { doc, updateDoc, increment, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
+const USE_API = import.meta.env.VITE_USE_API === 'true'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
 // Debounce tracking to prevent spam
 const DEBOUNCE_TIME = 5000 // 5 seconds
 const trackedEvents = new Map()
@@ -19,6 +22,27 @@ export async function trackView(listingId, ownerId) {
     if (Date.now() - lastTime < DEBOUNCE_TIME) {
       return // Skip if tracked within last 5 seconds
     }
+  }
+
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/tracking/view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId, ownerId })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      
+      trackedEvents.set(key, Date.now())
+      console.log('✅ View tracked:', listingId)
+    } catch (error) {
+      console.error('API Error:', error)
+    }
+    return
   }
 
   try {
@@ -56,6 +80,27 @@ export async function trackCall(listingId, ownerId) {
     }
   }
 
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/tracking/call`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId, ownerId })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      
+      trackedEvents.set(key, Date.now())
+      console.log('✅ Call tracked:', listingId)
+    } catch (error) {
+      console.error('API Error:', error)
+    }
+    return
+  }
+
   try {
     // Update daily analytics
     await incrementDailyAnalytics(ownerId, 'clicks')
@@ -82,6 +127,27 @@ export async function trackEmail(listingId, ownerId) {
     }
   }
 
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/tracking/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId, ownerId })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      
+      trackedEvents.set(key, Date.now())
+      console.log('✅ Email tracked:', listingId)
+    } catch (error) {
+      console.error('API Error:', error)
+    }
+    return
+  }
+
   try {
     await incrementDailyAnalytics(ownerId, 'clicks')
     trackedEvents.set(key, Date.now())
@@ -97,6 +163,25 @@ export async function trackEmail(listingId, ownerId) {
  * @param {string} ownerId - Owner user ID
  */
 export async function trackLead(listingId, ownerId) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/tracking/lead`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId, ownerId })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      console.log('✅ Lead tracked:', listingId)
+    } catch (error) {
+      console.error('API Error:', error)
+    }
+    return
+  }
+
   try {
     await incrementDailyAnalytics(ownerId, 'leads')
     console.log('✅ Lead tracked:', listingId)

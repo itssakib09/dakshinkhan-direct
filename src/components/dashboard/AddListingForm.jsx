@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../firebase/config'
 import { useAuth } from '../../context/AuthContext'
 import { uploadMultipleImages } from '../../utils/uploadImage'
+import { getCategories, getCatalogProducts } from '../../services/catalogService'
+import { createListing } from '../../services/listingService'
 import { Package, Image as ImageIcon, Upload, X, CheckCircle } from 'lucide-react'
 
 function AddListingForm({ onSuccess }) {
@@ -44,12 +44,10 @@ function AddListingForm({ onSuccess }) {
   async function loadCatalogData() {
     setCatalogLoading(true)
     try {
-      const categoriesSnap = await getDocs(collection(db, 'catalog'))
-      const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      const categoriesData = await getCategories()
       setCategories(categoriesData)
       
-      const productsSnap = await getDocs(collection(db, 'catalogProducts'))
-      const productsData = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      const productsData = await getCatalogProducts()
       setProducts(productsData)
       
       if (categoriesData.length === 0) {
@@ -227,12 +225,10 @@ function AddListingForm({ onSuccess }) {
         rating: 0,
         reviewCount: 0,
         verified: false,
-        featured: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        featured: false
       }
       
-      await addDoc(collection(db, 'listings'), listingData)
+      await createListing(listingData)
       
       if (onSuccess) onSuccess()
       

@@ -132,7 +132,7 @@ function Sidebar({ isOpen, onClose }) {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                       onClick={() => handleNavigation(item.path)}
-                      className="cursor-pointer"
+                      className="cursor-pointer relative"
                     >
                       <motion.div
                         whileHover={{ x: 6, scale: 1.01 }}
@@ -147,13 +147,11 @@ function Sidebar({ isOpen, onClose }) {
                         `}
                       >
                         {/* Active Accent Bar */}
-                        {active && (
-                          <motion.div
-                            layoutId="activeIndicator"
-                            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-white rounded-r-full shadow-lg"
-                            transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                          />
-                        )}
+{active && (
+  <div
+    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-white rounded-r-full shadow-lg"
+  />
+)}
 
                         {/* Icon Container */}
                         <motion.div

@@ -15,35 +15,17 @@ import {
 } from 'react-icons/hi'
 import { useLocation } from '../context/LocationContext'
 import { useEffect, useState } from 'react'
+import { getFeaturedBusinesses, getFeaturedServices } from '../services/homeService'
+
+const USE_API = import.meta.env.VITE_USE_API === 'true'
 
 function Home() {
   const navigate = useNavigate()
   const { selectedLocation } = useLocation()
   const [displayLocation, setDisplayLocation] = useState('Select Your Area')
+  const [loading, setLoading] = useState(false)
   
-  useEffect(() => {
-    if (selectedLocation) {
-      setDisplayLocation(selectedLocation)
-    } else {
-      setDisplayLocation('Select Your Area')
-    }
-  }, [selectedLocation])
-  
-  const businessCategories = [
-    { id: 'food', name: 'Food', icon: '🍽️' },
-    { id: 'shopping', name: 'Shopping', icon: '🛍️' },
-    { id: 'salon', name: 'Salon', icon: '✂️' },
-    { id: 'health', name: 'Health', icon: '❤️' },
-  ]
-
-  const serviceCategories = [
-    { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
-    { id: 'electrical', name: 'Electrical', icon: '⚡' },
-    { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-    { id: 'repair', name: 'Repair', icon: '🛠️' },
-  ]
-
-  const featuredBusinesses = [
+  const [featuredBusinesses, setFeaturedBusinesses] = useState([
     {
       id: 1,
       name: 'Golden Spoon Restaurant',
@@ -64,9 +46,9 @@ function Home() {
       status: 'Open Now',
       reviews: 189
     }
-  ]
+  ])
 
-  const featuredServices = [
+  const [featuredServices, setFeaturedServices] = useState([
     {
       id: 1,
       name: 'Expert Plumbing Solutions',
@@ -87,6 +69,49 @@ function Home() {
       status: 'Available',
       reviews: 98
     }
+  ])
+
+  useEffect(() => {
+    if (selectedLocation) {
+      setDisplayLocation(selectedLocation)
+    } else {
+      setDisplayLocation('Select Your Area')
+    }
+  }, [selectedLocation])
+
+  useEffect(() => {
+    if (USE_API) {
+      const fetchFeaturedData = async () => {
+        setLoading(true)
+        try {
+          const [businesses, services] = await Promise.all([
+            getFeaturedBusinesses(),
+            getFeaturedServices()
+          ])
+          if (businesses?.length > 0) setFeaturedBusinesses(businesses)
+          if (services?.length > 0) setFeaturedServices(services)
+        } catch (error) {
+          console.error('Failed to fetch featured data:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchFeaturedData()
+    }
+  }, [])
+  
+  const businessCategories = [
+    { id: 'food', name: 'Food', icon: '🍽️' },
+    { id: 'shopping', name: 'Shopping', icon: '🛍️' },
+    { id: 'salon', name: 'Salon', icon: '✂️' },
+    { id: 'health', name: 'Health', icon: '❤️' },
+  ]
+
+  const serviceCategories = [
+    { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
+    { id: 'electrical', name: 'Electrical', icon: '⚡' },
+    { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
+    { id: 'repair', name: 'Repair', icon: '🛠️' },
   ]
 
   return (
@@ -193,56 +218,62 @@ function Home() {
             </button>
           </div>
           
-          <div className="w-full overflow-hidden">
-            <Swiper
-              modules={[Autoplay, Pagination]}
-              spaceBetween={16}
-              slidesPerView={1}
-              pagination={{ clickable: true }}
-              autoplay={{ delay: 3000, disableOnInteraction: false }}
-              breakpoints={{
-                640: { slidesPerView: 1 },
-                768: { slidesPerView: 2 },
-                1024: { slidesPerView: 2 },
-              }}
-              className="!pb-12"
-            >
-              {featuredBusinesses.map((business) => (
-                <SwiperSlide key={business.id}>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                    <div className="relative h-40 sm:h-48 overflow-hidden">
-                      <img 
-                        src={business.image} 
-                        alt={business.name} 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 right-3 flex items-center space-x-1 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-lg">
-                        <HiStar className="text-primary-500 fill-primary-500" size={14} />
-                        <span className="text-xs font-black text-gray-800 dark:text-white">{business.rating}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">({business.reviews})</span>
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <div>
-                        <h4 className="font-black text-base text-gray-900 dark:text-white truncate">{business.name}</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{business.category}</p>
-                      </div>
-                      <div className="flex items-center justify-between text-xs gap-2">
-                        <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
-                          <HiLocationMarker size={12} className="text-primary-600 dark:text-primary-400" />
-                          <span className="font-semibold text-gray-700 dark:text-gray-300">{business.distance}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
-                          <HiClock size={12} className="text-primary-600 dark:text-primary-400" />
-                          <span className="font-semibold text-primary-700 dark:text-primary-400">{business.status}</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          ) : (
+            <div className="w-full overflow-hidden">
+              <Swiper
+                modules={[Autoplay, Pagination]}
+                spaceBetween={16}
+                slidesPerView={1}
+                pagination={{ clickable: true }}
+                autoplay={{ delay: 3000, disableOnInteraction: false }}
+                breakpoints={{
+                  640: { slidesPerView: 1 },
+                  768: { slidesPerView: 2 },
+                  1024: { slidesPerView: 2 },
+                }}
+                className="!pb-12"
+              >
+                {featuredBusinesses.map((business) => (
+                  <SwiperSlide key={business.id}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                      <div className="relative h-40 sm:h-48 overflow-hidden">
+                        <img 
+                          src={business.image} 
+                          alt={business.name} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-3 right-3 flex items-center space-x-1 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-lg">
+                          <HiStar className="text-primary-500 fill-primary-500" size={14} />
+                          <span className="text-xs font-black text-gray-800 dark:text-white">{business.rating}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">({business.reviews})</span>
                         </div>
                       </div>
+                      <div className="p-4 space-y-2">
+                        <div>
+                          <h4 className="font-black text-base text-gray-900 dark:text-white truncate">{business.name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{business.category}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs gap-2">
+                          <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
+                            <HiLocationMarker size={12} className="text-primary-600 dark:text-primary-400" />
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">{business.distance}</span>
+                          </div>
+                          <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
+                            <HiClock size={12} className="text-primary-600 dark:text-primary-400" />
+                            <span className="font-semibold text-primary-700 dark:text-primary-400">{business.status}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          )}
         </motion.div>
 
         {/* Featured Services */}
@@ -263,56 +294,62 @@ function Home() {
             </button>
           </div>
           
-          <div className="w-full overflow-hidden">
-            <Swiper
-              modules={[Autoplay, Pagination]}
-              spaceBetween={16}
-              slidesPerView={1}
-              pagination={{ clickable: true }}
-              autoplay={{ delay: 3500, disableOnInteraction: false }}
-              breakpoints={{
-                640: { slidesPerView: 1 },
-                768: { slidesPerView: 2 },
-                1024: { slidesPerView: 2 },
-              }}
-              className="!pb-12"
-            >
-              {featuredServices.map((service) => (
-                <SwiperSlide key={service.id}>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                    <div className="relative h-40 sm:h-48 overflow-hidden">
-                      <img 
-                        src={service.image} 
-                        alt={service.name} 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 right-3 flex items-center space-x-1 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-lg">
-                        <HiStar className="text-primary-500 fill-primary-500" size={14} />
-                        <span className="text-xs font-black text-gray-800 dark:text-white">{service.rating}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">({service.reviews})</span>
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <div>
-                        <h4 className="font-black text-base text-gray-900 dark:text-white truncate">{service.name}</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{service.category}</p>
-                      </div>
-                      <div className="flex items-center justify-between text-xs gap-2">
-                        <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
-                          <HiLocationMarker size={12} className="text-primary-600 dark:text-primary-400" />
-                          <span className="font-semibold text-gray-700 dark:text-gray-300">{service.distance}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
-                          <HiClock size={12} className="text-primary-600 dark:text-primary-400" />
-                          <span className="font-semibold text-primary-700 dark:text-primary-400">{service.status}</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          ) : (
+            <div className="w-full overflow-hidden">
+              <Swiper
+                modules={[Autoplay, Pagination]}
+                spaceBetween={16}
+                slidesPerView={1}
+                pagination={{ clickable: true }}
+                autoplay={{ delay: 3500, disableOnInteraction: false }}
+                breakpoints={{
+                  640: { slidesPerView: 1 },
+                  768: { slidesPerView: 2 },
+                  1024: { slidesPerView: 2 },
+                }}
+                className="!pb-12"
+              >
+                {featuredServices.map((service) => (
+                  <SwiperSlide key={service.id}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                      <div className="relative h-40 sm:h-48 overflow-hidden">
+                        <img 
+                          src={service.image} 
+                          alt={service.name} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-3 right-3 flex items-center space-x-1 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-lg">
+                          <HiStar className="text-primary-500 fill-primary-500" size={14} />
+                          <span className="text-xs font-black text-gray-800 dark:text-white">{service.rating}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">({service.reviews})</span>
                         </div>
                       </div>
+                      <div className="p-4 space-y-2">
+                        <div>
+                          <h4 className="font-black text-base text-gray-900 dark:text-white truncate">{service.name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{service.category}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs gap-2">
+                          <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
+                            <HiLocationMarker size={12} className="text-primary-600 dark:text-primary-400" />
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">{service.distance}</span>
+                          </div>
+                          <div className="flex items-center space-x-1 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg flex-shrink-0">
+                            <HiClock size={12} className="text-primary-600 dark:text-primary-400" />
+                            <span className="font-semibold text-primary-700 dark:text-primary-400">{service.status}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          )}
         </motion.div>
 
         {/* Popular Business Categories */}

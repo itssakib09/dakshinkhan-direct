@@ -1,6 +1,9 @@
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
+const USE_API = import.meta.env.VITE_USE_API === 'true'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
 /**
  * Get analytics data for a date range
  * @param {string} userId - User ID
@@ -8,6 +11,23 @@ import { db } from '../firebase/config'
  * @returns {Promise<Object>} Aggregated analytics data
  */
 export async function getAnalytics(userId, days = 7) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/analytics/${userId}?days=${days}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const startDate = getDateString(new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000))
     const endDate = getDateString(new Date())
@@ -143,7 +163,24 @@ function formatDateShort(dateString) {
 /**
  * Get top performing listings
  */
-export async function getTopListings(userId, limit = 5) {
+export async function getTopListings(userId, limitCount = 5) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/analytics/${userId}/top-listings?limit=${limitCount}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      return []
+    }
+  }
+
   try {
     const analyticsRef = collection(db, 'analytics', userId, 'daily')
     const last7Days = getDateString(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000))
@@ -169,7 +206,7 @@ export async function getTopListings(userId, limit = 5) {
 
     return Array.from(listingStats.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
+      .slice(0, limitCount)
       .map(([listingId, count]) => ({ listingId, views: count }))
   } catch (error) {
     console.error('Error fetching top listings:', error)

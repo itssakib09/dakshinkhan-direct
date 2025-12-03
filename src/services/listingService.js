@@ -8,6 +8,7 @@ import {
   getDocs,
   getDoc,
   doc,
+  addDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp
@@ -15,9 +16,68 @@ import {
 import { ref, deleteObject } from 'firebase/storage'
 import { db, storage } from '../firebase/config'
 
+const USE_API = import.meta.env.VITE_USE_API === 'true'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const LISTINGS_PER_PAGE = 10
 
+export async function createListing(listingData) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(listingData)
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
+  try {
+    const listingsRef = collection(db, 'listings')
+    const docRef = await addDoc(listingsRef, {
+      ...listingData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+    return { id: docRef.id, ...listingData }
+  } catch (error) {
+    console.error('Error creating listing:', error)
+    throw error
+  }
+}
+
 export async function getMyListings(userId, lastDocument = null) {
+  if (USE_API) {
+    try {
+      const page = lastDocument?.page || 0
+      const params = new URLSearchParams({ 
+        userId, 
+        page,
+        limit: LISTINGS_PER_PAGE 
+      })
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings/my?${params}`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const listingsRef = collection(db, 'listings')
     
@@ -45,7 +105,9 @@ export async function getMyListings(userId, lastDocument = null) {
       ...doc.data()
     }))
 
-    const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null
+    const lastDoc = snapshot.docs.length > 0 
+      ? { page: lastDocument?.page ? lastDocument.page + 1 : 1 }
+      : null
     const hasMore = snapshot.docs.length === LISTINGS_PER_PAGE
 
     return { listings, lastDoc, hasMore }
@@ -56,6 +118,23 @@ export async function getMyListings(userId, lastDocument = null) {
 }
 
 export async function getStoreListings(userId) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings/store/${userId}`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const listingsRef = collection(db, 'listings')
     
@@ -81,6 +160,23 @@ export async function getStoreListings(userId) {
 }
 
 export async function getStoreOwner(userId) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/users/${userId}`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const userDoc = await getDoc(doc(db, 'users', userId))
     if (userDoc.exists()) {
@@ -94,6 +190,25 @@ export async function getStoreOwner(userId) {
 }
 
 export async function updateListing(listingId, data) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings/${listingId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(data)
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const listingRef = doc(db, 'listings', listingId)
     await updateDoc(listingRef, {
@@ -108,6 +223,25 @@ export async function updateListing(listingId, data) {
 }
 
 export async function deleteListing(listingId, imageUrls = []) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings/${listingId}`, {
+        method: 'DELETE',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ imageUrls })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     if (imageUrls.length > 0) {
       await Promise.allSettled(
@@ -132,6 +266,23 @@ export async function deleteListing(listingId, imageUrls = []) {
 }
 
 export async function getListing(listingId) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/listings/${listingId}`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const listingDoc = await getDoc(doc(db, 'listings', listingId))
     if (listingDoc.exists()) {

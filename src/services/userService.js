@@ -1,7 +1,29 @@
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 
+const USE_API = import.meta.env.VITE_USE_API === 'true'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
 export async function createUserProfile(uid, userData) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ uid, ...userData })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     console.log('📝 Creating user profile in Firestore')
     console.log('UID:', uid)
@@ -34,6 +56,23 @@ export async function createUserProfile(uid, userData) {
 }
 
 export async function getUserProfile(uid) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/users/${uid}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     console.log('📖 Fetching user profile for UID:', uid)
     const userRef = doc(db, 'users', uid)
@@ -53,6 +92,25 @@ export async function getUserProfile(uid) {
 }
 
 export async function updateUserProfile(uid, updates) {
+  if (USE_API) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await fetch(`${API_URL}/users/${uid}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      })
+      if (!res.ok) throw new Error(await res.text())
+      return await res.json()
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+  }
+
   try {
     const userRef = doc(db, 'users', uid)
     const updateData = {
