@@ -11,7 +11,7 @@ export function useLocation() {
 }
 
 export function LocationProvider({ children }) {
-  const [selectedLocation, setSelectedLocation] = useState(null)
+ const [selectedLocation, setSelectedLocation] = useState('ALL')
   const [previousPage, setPreviousPage] = useState('/')
   const [showNotification, setShowNotification] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState('')
@@ -19,24 +19,24 @@ export function LocationProvider({ children }) {
   // Load location from localStorage on mount
   useEffect(() => {
     const savedLocation = localStorage.getItem('dakshinkhan_location')
-    if (savedLocation) {
-      try {
-        setSelectedLocation(JSON.parse(savedLocation))
-      } catch (error) {
-        console.error('Failed to parse saved location:', error)
-        localStorage.removeItem('dakshinkhan_location')
-      }
-    }
+if (savedLocation) {
+  setSelectedLocation(savedLocation)
+}
+
   }, [])
 
   // Save location to localStorage whenever it changes
   const saveLocation = (location) => {
-    setSelectedLocation(location)
-    localStorage.setItem('dakshinkhan_location', JSON.stringify(location))
-    
+  setSelectedLocation(location)
+  localStorage.setItem('dakshinkhan_location', location)
+  
     // Show notification
-    setNotificationMessage(`Location Changed To ${location}`)
-    setShowNotification(true)
+    setNotificationMessage(
+    location === 'ALL'
+      ? 'Showing all areas'
+      : `Location Changed To ${location}`
+  )
+  setShowNotification(true)
     
     // Auto-hide notification after 3 seconds
     setTimeout(() => {
@@ -45,9 +45,10 @@ export function LocationProvider({ children }) {
   }
 
   const clearLocation = () => {
-    setSelectedLocation(null)
-    localStorage.removeItem('dakshinkhan_location')
-  }
+  setSelectedLocation('ALL')
+  localStorage.setItem('dakshinkhan_location', 'ALL')
+}
+
 
   const savePreviousPage = (page) => {
     setPreviousPage(page)
