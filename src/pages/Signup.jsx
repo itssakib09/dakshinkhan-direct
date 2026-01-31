@@ -33,13 +33,13 @@ function Signup() {
     {
       id: 'business',
       icon: Store,
-      title: 'Business',
+      title: 'Business Owner',
       description: 'List my shop'
     },
     {
       id: 'service',
       icon: Wrench,
-      title: 'Service',
+      title: 'Service Provider',
       description: 'Offer services'
     },
     {
