@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { LocationProvider } from './context/LocationContext'
+import { SearchProvider } from './context/SearchContext'
 import { AnimatePresence } from 'framer-motion'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/PrivateRoute'
@@ -17,6 +18,7 @@ const CategorySingle = lazy(() => import('./pages/CategorySingle'))
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const BusinessSetupWizard = lazy(() => import('./pages/BusinessSetupWizard'))
 const Store = lazy(() => import('./pages/Store'))
 const Admin = lazy(() => import('./pages/Admin'))
 const About = lazy(() => import('./pages/About'))
@@ -24,6 +26,7 @@ const Contact = lazy(() => import('./pages/Contact'))
 const ComponentDemo = lazy(() => import('./pages/ComponentDemo'))
 const SeedPage = lazy(() => import('./pages/SeedPage'))
 const Locations = lazy(() => import('./pages/Locations'))
+const Search = lazy(() => import('./pages/Search'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -50,6 +53,11 @@ function AnimatedRoutes() {
           <Route path="store/:id" element={
             <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
               <PageTransition><Store /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="search" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Search /></PageTransition>
             </Suspense>
           } />
           <Route path="login" element={
@@ -90,6 +98,16 @@ function AnimatedRoutes() {
           
           {/* Protected Routes */}
           <Route
+            path="business-setup"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+                  <PageTransition><BusinessSetupWizard /></PageTransition>
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="dashboard"
             element={
               <ProtectedRoute>
@@ -120,9 +138,11 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <LocationProvider>
-          <BrowserRouter>
-            <AnimatedRoutes />
-          </BrowserRouter>
+          <SearchProvider>
+            <BrowserRouter>
+              <AnimatedRoutes />
+            </BrowserRouter>
+          </SearchProvider>
         </LocationProvider>
       </AuthProvider>
     </ThemeProvider>

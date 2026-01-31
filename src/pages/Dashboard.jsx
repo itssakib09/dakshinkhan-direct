@@ -7,11 +7,11 @@ import AnalyticsSection from '../components/dashboard/AnalyticsSection'
 import MyListingsSection from '../components/dashboard/MyListingsSection'
 import AddListingForm from '../components/dashboard/AddListingForm'
 import ProfileSection from '../components/dashboard/ProfileSection'
-import PaymentsSection from '../components/dashboard/PaymentsSection'
-import { HiChartBar, HiViewGrid, HiPlus, HiUser, HiCreditCard, HiBriefcase, HiShoppingBag } from 'react-icons/hi'
+import StoreSettingsSection from '../components/dashboard/StoreSettingsSection'
+import { HiChartBar, HiViewGrid, HiPlus, HiUser, HiBriefcase, HiShoppingBag, HiCog } from 'react-icons/hi'
 
 function Dashboard() {
-  const [activeSection, setActiveSection] = useState('analytics')
+  const [activeSection, setActiveSection] = useState('overview')
   const [localProfile, setLocalProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -31,6 +31,11 @@ function Dashboard() {
       }
 
       if (userProfile) {
+        if ((userProfile.role === 'business' || userProfile.role === 'service') && !userProfile.onboardingComplete) {
+          navigate('/business-setup')
+          return
+        }
+
         setLocalProfile(userProfile)
         setProfileLoading(false)
         return
@@ -41,6 +46,11 @@ function Dashboard() {
           const profile = await getUserProfile(currentUser.uid)
           
           if (profile) {
+            if ((profile.role === 'business' || profile.role === 'service') && !profile.onboardingComplete) {
+              navigate('/business-setup')
+              return
+            }
+
             setLocalProfile(profile)
           } else {
             const newProfile = {
@@ -123,22 +133,23 @@ function Dashboard() {
     switch (role) {
       case 'business':
         return [
-          { id: 'analytics', label: 'Analytics', icon: HiChartBar },
-          { id: 'my-listings', label: 'My Store', icon: HiShoppingBag },
+          { id: 'overview', label: 'Overview', icon: HiChartBar },
+          { id: 'my-listings', label: 'My Listings', icon: HiShoppingBag },
           { id: 'add-listing', label: 'Add Listing', icon: HiPlus },
-          { id: 'payments', label: 'Payments', icon: HiCreditCard },
+          { id: 'store-settings', label: 'Store Settings', icon: HiCog },
           { id: 'profile', label: 'Profile', icon: HiUser },
         ]
       case 'service':
         return [
-          { id: 'analytics', label: 'Analytics', icon: HiChartBar },
-          { id: 'my-listings', label: 'My Portfolio', icon: HiBriefcase },
+          { id: 'overview', label: 'Overview', icon: HiChartBar },
+          { id: 'my-listings', label: 'My Services', icon: HiBriefcase },
           { id: 'add-listing', label: 'Add Service', icon: HiPlus },
+          { id: 'store-settings', label: 'Service Settings', icon: HiCog },
           { id: 'profile', label: 'Profile', icon: HiUser },
         ]
       default:
         return [
-          { id: 'analytics', label: 'Overview', icon: HiChartBar },
+          { id: 'overview', label: 'Overview', icon: HiChartBar },
           { id: 'my-listings', label: 'My Orders', icon: HiViewGrid },
           { id: 'profile', label: 'Profile', icon: HiUser },
         ]
@@ -149,18 +160,18 @@ function Dashboard() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'analytics':
-        return <AnalyticsSection />
+      case 'overview':
+        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
       case 'my-listings':
         return <MyListingsSection />
       case 'add-listing':
         return <AddListingForm onSuccess={() => setActiveSection('my-listings')} />
+      case 'store-settings':
+        return <StoreSettingsSection />
       case 'profile':
         return <ProfileSection />
-      case 'payments':
-        return <PaymentsSection />
       default:
-        return <AnalyticsSection />
+        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
     }
   }
 

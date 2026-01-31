@@ -11,7 +11,7 @@ export function useLocation() {
 }
 
 export function LocationProvider({ children }) {
- const [selectedLocation, setSelectedLocation] = useState('ALL')
+ const [selectedLocation, setSelectedLocation] = useState('ALL Areas')
   const [previousPage, setPreviousPage] = useState('/')
   const [showNotification, setShowNotification] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState('')
@@ -32,7 +32,7 @@ if (savedLocation) {
   
     // Show notification
     setNotificationMessage(
-    location === 'ALL'
+    location === 'ALL Areas'
       ? 'Showing all areas'
       : `Location Changed To ${location}`
   )
@@ -45,8 +45,8 @@ if (savedLocation) {
   }
 
   const clearLocation = () => {
-  setSelectedLocation('ALL')
-  localStorage.setItem('dakshinkhan_location', 'ALL')
+  setSelectedLocation('ALL Areas')
+  localStorage.setItem('dakshinkhan_location', 'ALL Areas')
 }
 
 

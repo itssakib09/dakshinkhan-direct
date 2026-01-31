@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { HiBell, HiLogout, HiUser, HiSun, HiMoon, HiMenu } from 'react-icons/hi'
+import { HiBell, HiLogout, HiUser, HiSun, HiMoon, HiMenu, HiSearch } from 'react-icons/hi'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useLocation } from '../context/LocationContext'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function Header({ onMenuClick }) {
   const { currentUser, userProfile, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { selectedLocation } = useLocation()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
 
   async function handleLogout() {
     try {
@@ -15,6 +22,15 @@ function Header({ onMenuClick }) {
     } catch (error) {
       console.error('Logout failed:', error)
       alert('Failed to logout. Please try again.')
+    }
+  }
+
+  function handleSearch(e) {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(selectedLocation || 'All Areas')}`)
+      setSearchQuery('')
+      setSearchFocused(false)
     }
   }
 
@@ -50,7 +66,7 @@ function Header({ onMenuClick }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </motion.div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
                   Dakshinkhan
                 </h1>
@@ -59,8 +75,51 @@ function Header({ onMenuClick }) {
             </Link>
           </div>
 
+          {/* Center - Search Bar (Desktop only) */}
+          <div className="hidden lg:flex flex-1 max-w-2xl mx-4">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className={`relative flex items-center transition-all duration-300 ${
+                searchFocused 
+                  ? 'ring-2 ring-primary-500 dark:ring-primary-400' 
+                  : 'ring-1 ring-gray-200 dark:ring-gray-700'
+              } rounded-xl bg-gray-50 dark:bg-gray-800`}>
+                <HiSearch 
+                  size={20} 
+                  className="absolute left-3 text-gray-400 dark:text-gray-500"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  placeholder={`Search in ${selectedLocation || 'All Areas'}...`}
+                  className="w-full pl-10 pr-4 py-2.5 bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    type="submit"
+                    className="absolute right-2 px-3 py-1.5 text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  >
+                    Search
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
           {/* Right Side */}
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            {/* Mobile Search Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/search')}
+              className="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors shadow-md"
+            >
+              <HiSearch size={18} className="text-gray-700 dark:text-gray-300" />
+            </motion.button>
+
             {/* Desktop Auth */}
             {currentUser ? (
               <div className="hidden md:flex items-center gap-2 md:gap-3">

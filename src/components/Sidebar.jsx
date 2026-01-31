@@ -25,7 +25,7 @@ function Sidebar({ isOpen, onClose }) {
         return [
           { path: '/', icon: HiHome, label: 'Home' },
           { path: '/dashboard', icon: HiChartSquareBar, label: 'Dashboard' },
-          { path: '/store', icon: HiShoppingBag, label: 'My Store' },
+          { path: '/my-store', icon: HiShoppingBag, label: 'My Store' },
           { path: '/settings', icon: HiCog, label: 'Settings' },
         ]
       
@@ -33,7 +33,7 @@ function Sidebar({ isOpen, onClose }) {
         return [
           { path: '/', icon: HiHome, label: 'Home' },
           { path: '/dashboard', icon: HiChartSquareBar, label: 'Dashboard' },
-          { path: '/portfolio', icon: HiBriefcase, label: 'My Portfolio' },
+          { path: '/my-services', icon: HiBriefcase, label: 'My Services' },
           { path: '/settings', icon: HiCog, label: 'Settings' },
         ]
       
@@ -147,11 +147,9 @@ function Sidebar({ isOpen, onClose }) {
                         `}
                       >
                         {/* Active Accent Bar */}
-{active && (
-  <div
-    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-white rounded-r-full shadow-lg"
-  />
-)}
+                        {active && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-white rounded-r-full shadow-lg" />
+                        )}
 
                         {/* Icon Container */}
                         <motion.div

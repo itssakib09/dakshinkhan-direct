@@ -3,33 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HiLocationMarker, HiCheckCircle, HiSearch, HiX, HiGlobe } from 'react-icons/hi'
 import { useLocation } from '../context/LocationContext'
+import { LOCATIONS } from '../data/locations'
 
 function Locations() {
   const navigate = useNavigate()
   const { saveLocation, previousPage } = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const locationsWithCoords = [
-    { name: 'Ashkona' },
-    { name: 'Hajj camp' },
-    { name: 'Prembagan' },
-    { name: 'Gawair' },
-    { name: 'Mollartek' },
-    { name: 'Koshai Bazar' },
-    { name: 'Dakshinkhan' },
-    { name: 'Ainusbag' },
-    { name: 'City Complex' },
-    { name: 'Sardarbari' },
-    { name: 'Taltola' },
-    { name: 'Dobadiya' },
-    { name: 'Kanchkura' },
-    { name: 'Naddapara' },
-    { name: 'Holan' }
-  ]
-
-  const locations = locationsWithCoords.map(loc => loc.name)
-
-  const filteredLocations = locations.filter(location =>
+  const filteredLocations = LOCATIONS.filter(location =>
     location.toLowerCase().includes(searchQuery.toLowerCase().trim())
   )
 
