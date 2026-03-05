@@ -6,7 +6,7 @@
 
 export const BUSINESS_TYPES = [
   'Grocery Store',
-  
+  'Supermarket',
   'Restaurant',
   'Fast Food',
   'Cafe',
