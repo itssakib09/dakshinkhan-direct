@@ -1,32 +1,41 @@
 import { motion } from 'framer-motion'
 import { CheckCircle } from 'lucide-react'
 
-function WizardLayout({ children, currentStep, totalSteps }) {
-  const steps = [
+function WizardLayout({ children, currentStep, totalSteps, isService = false }) {
+  const businessSteps = [
     { number: 1, label: 'Store Info' },
     { number: 2, label: 'Service Areas' },
     { number: 3, label: 'Opening Hours' },
     { number: 4, label: 'Review' },
   ]
 
+  const serviceSteps = [
+    { number: 1, label: 'Basic Info' },
+    { number: 2, label: 'Cover Photo' },
+    { number: 3, label: 'Services' },
+    { number: 4, label: 'Areas' },
+    { number: 5, label: 'Availability' },
+    { number: 6, label: 'Review' },
+  ]
+
+  const steps = isService ? serviceSteps : businessSteps
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
           <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-400 dark:to-primary-500 bg-clip-text text-transparent mb-2">
-            Setup Your Business
+            {isService ? 'Setup Your Service Profile' : 'Setup Your Business'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Complete your profile to start reaching customers
+            {isService ? 'Complete your profile to start receiving service requests' : 'Complete your profile to start reaching customers'}
           </p>
         </motion.div>
 
-        {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => (
@@ -71,7 +80,6 @@ function WizardLayout({ children, currentStep, totalSteps }) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
           {children}
         </div>

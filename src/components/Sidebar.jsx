@@ -33,7 +33,7 @@ function Sidebar({ isOpen, onClose }) {
         return [
           { path: '/', icon: HiHome, label: 'Home' },
           { path: '/dashboard', icon: HiChartSquareBar, label: 'Dashboard' },
-          { path: '/my-services', icon: HiBriefcase, label: 'My Services' },
+          { path: '/my-services', icon: HiBriefcase, label: 'Portfolio' },
           { path: '/settings', icon: HiCog, label: 'Settings' },
         ]
       

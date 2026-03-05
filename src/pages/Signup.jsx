@@ -183,11 +183,13 @@ function Signup() {
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      if (role === 'business' || role === 'service') {
-        navigate('/business-setup')
-      } else {
-        navigate('/')
-      }
+if (role === 'business') {
+  navigate('/business-setup')
+} else if (role === 'service') {
+  navigate('/service-setup')
+} else {
+  navigate('/')
+}
 
     } catch (error) {
       console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')

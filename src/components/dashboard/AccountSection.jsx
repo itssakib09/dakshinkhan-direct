@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Camera, Save, Lock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
-function ProfileSection() {
+function AccountSection() {
   const { currentUser } = useAuth()
   const [isSaving, setIsSaving] = useState(false)
 
@@ -26,12 +26,11 @@ function ProfileSection() {
         animate={{ opacity: 1, x: 0 }}
         className="mb-6"
       >
-        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">Profile Settings</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account information</p>
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">Account Settings</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your private account information</p>
       </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Profile Picture */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -64,7 +63,6 @@ function ProfileSection() {
           </div>
         </motion.div>
 
-        {/* Account Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -128,7 +126,6 @@ function ProfileSection() {
         </motion.div>
       </div>
 
-      {/* Security Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -186,4 +183,4 @@ function ProfileSection() {
   )
 }
 
-export default ProfileSection
+export default AccountSection

@@ -29,7 +29,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
 
-  // Set persistence on mount
   useEffect(() => {
     console.log('🔧 [Session] Setting auth persistence to LOCAL')
     setPersistence(auth, browserLocalPersistence)
@@ -42,8 +41,27 @@ export function AuthProvider({ children }) {
   }, [])
 
   /**
-   * Sign up with email and password
+   * Refresh user profile from Firestore
+   * Call this after updating profile to sync state
    */
+  async function refreshUserProfile() {
+    if (!currentUser) return null
+    
+    console.log('🔄 [AuthContext] Refreshing user profile...')
+    try {
+      const profile = await getUserProfile(currentUser.uid)
+      if (profile) {
+        setUserProfile(profile)
+        console.log('✅ [AuthContext] Profile refreshed')
+        console.log('   - onboardingComplete:', profile.onboardingComplete)
+      }
+      return profile
+    } catch (error) {
+      console.error('❌ [AuthContext] Failed to refresh profile:', error)
+      return null
+    }
+  }
+
   async function signUp(email, password, displayName, additionalData = {}) {
     console.log('🔵 [AuthContext] Starting signup...')
     
@@ -84,9 +102,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  /**
-   * Sign in with email and password
-   */
   async function signIn(email, password) {
     console.log('🔵 [AuthContext] Signing in...')
     try {
@@ -99,9 +114,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  /**
-   * Sign in with Google
-   */
   async function signInWithGoogle() {
     console.log('🔵 [AuthContext] Starting Google sign-in...')
     
@@ -142,9 +154,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  /**
-   * Sign out and clear session
-   */
   async function logout() {
     console.log('🔵 [Session] Logging out...')
     try {
@@ -158,10 +167,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  /**
-   * Session restoration listener
-   * Runs on mount and auth state changes
-   */
   useEffect(() => {
     console.log('👂 [Session] Setting up auth state listener...')
     
@@ -215,7 +220,8 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signInWithGoogle,
-    logout
+    logout,
+    refreshUserProfile
   }
 
   return (

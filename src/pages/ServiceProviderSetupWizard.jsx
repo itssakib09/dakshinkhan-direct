@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { getUserProfile, updateUserProfile } from '../services/userService'
 import WizardLayout from '../components/onboarding/WizardLayout'
-import StepStoreInfo from '../components/onboarding/StepStoreInfo'
-import StepAreas from '../components/onboarding/StepAreas'
-import StepHours from '../components/onboarding/StepHours'
-import StepFinish from '../components/onboarding/StepFinish'
+import ServiceStepBasicInfo from '../components/onboarding/ServiceStepBasicInfo'
+import ServiceStepCoverPhoto from '../components/onboarding/ServiceStepCoverPhoto'
+import ServiceStepServices from '../components/onboarding/ServiceStepServices'
+import ServiceStepAreas from '../components/onboarding/ServiceStepAreas'
+import ServiceStepAvailability from '../components/onboarding/ServiceStepAvailability'
+import ServiceStepFinish from '../components/onboarding/ServiceStepFinish'
 
-function BusinessSetupWizard() {
+function ServiceProviderSetupWizard() {
   const { currentUser, userProfile, refreshUserProfile } = useAuth()
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
@@ -17,20 +19,21 @@ function BusinessSetupWizard() {
   const [saving, setSaving] = useState(false)
 
   const [formData, setFormData] = useState({
-    storeName: '',
-    businessType: '',
-    serviceAreas: [],
-    openingHours: {
-      monday: { open: '09:00', close: '18:00', closed: false },
-      tuesday: { open: '09:00', close: '18:00', closed: false },
-      wednesday: { open: '09:00', close: '18:00', closed: false },
-      thursday: { open: '09:00', close: '18:00', closed: false },
-      friday: { open: '09:00', close: '18:00', closed: false },
-      saturday: { open: '09:00', close: '18:00', closed: false },
-      sunday: { open: '09:00', close: '18:00', closed: false },
-    },
-    defaultHours: { open: '09:00', close: '18:00' },
-    storeActive: true,
+    fullName: '',
+    phone: '',
+    profession: '',
+    coverPhoto: '',
+    servicesOffered: [],
+    coverageAreas: [],
+    availability: {
+      monday: { available: true, hours: '9 AM - 6 PM' },
+      tuesday: { available: true, hours: '9 AM - 6 PM' },
+      wednesday: { available: true, hours: '9 AM - 6 PM' },
+      thursday: { available: true, hours: '9 AM - 6 PM' },
+      friday: { available: true, hours: '9 AM - 6 PM' },
+      saturday: { available: true, hours: '9 AM - 6 PM' },
+      sunday: { available: false, hours: 'Closed' },
+    }
   })
 
   useEffect(() => {
@@ -48,10 +51,21 @@ function BusinessSetupWizard() {
           return
         }
 
+        if (profile?.role === 'business') {
+          navigate('/business-setup')
+          return
+        }
+
         if (profile?.role === 'customer') {
           navigate('/')
           return
         }
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: profile?.displayName || '',
+          phone: profile?.phone || ''
+        }))
 
         setLoading(false)
       } catch (error) {
@@ -63,7 +77,7 @@ function BusinessSetupWizard() {
     checkOnboarding()
   }, [currentUser, navigate])
 
-  const totalSteps = 4
+  const totalSteps = 6
 
   const updateFormData = (updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
@@ -85,30 +99,36 @@ function BusinessSetupWizard() {
     try {
       setSaving(true)
 
-      console.log('💾 [Wizard] Saving setup data...')
+      console.log('💾 [Service Wizard] Saving setup data...')
       await updateUserProfile(currentUser.uid, {
-        storeSettings: {
-          storeName: formData.storeName,
-          storePhone: userProfile?.phone || '',
-          businessType: formData.businessType,
-          serviceAreas: formData.serviceAreas,
-          openingHours: formData.openingHours,
-          defaultHours: formData.defaultHours,
-          storeActive: formData.storeActive,
+        displayName: formData.fullName,
+        phone: formData.phone,
+        serviceProfile: {
+          profession: formData.profession,
+          coverPhoto: formData.coverPhoto,
+          profilePhoto: '',
+          bio: '',
+          servicesOffered: formData.servicesOffered,
+          pricing: [],
+          coverageAreas: formData.coverageAreas,
+          availability: {
+            availableNow: true,
+            schedule: formData.availability
+          }
         },
         onboardingComplete: true,
       })
 
-      console.log('✅ [Wizard] Setup saved to Firestore')
+      console.log('✅ [Service Wizard] Setup saved to Firestore')
       
-      console.log('🔄 [Wizard] Refreshing AuthContext profile state...')
+      console.log('🔄 [Service Wizard] Refreshing AuthContext profile state...')
       await refreshUserProfile()
-      console.log('✅ [Wizard] Profile state refreshed')
+      console.log('✅ [Service Wizard] Profile state refreshed')
 
-      console.log('➡️ [Wizard] Redirecting to dashboard...')
+      console.log('➡️ [Service Wizard] Redirecting to dashboard...')
       navigate('/dashboard')
     } catch (error) {
-      console.error('❌ [Wizard] Error completing setup:', error)
+      console.error('❌ [Service Wizard] Error completing setup:', error)
       setSaving(false)
     }
   }
@@ -128,7 +148,7 @@ function BusinessSetupWizard() {
     switch (currentStep) {
       case 1:
         return (
-          <StepStoreInfo
+          <ServiceStepBasicInfo
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -136,7 +156,7 @@ function BusinessSetupWizard() {
         )
       case 2:
         return (
-          <StepAreas
+          <ServiceStepCoverPhoto
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -145,7 +165,7 @@ function BusinessSetupWizard() {
         )
       case 3:
         return (
-          <StepHours
+          <ServiceStepServices
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -154,7 +174,25 @@ function BusinessSetupWizard() {
         )
       case 4:
         return (
-          <StepFinish
+          <ServiceStepAreas
+            formData={formData}
+            updateFormData={updateFormData}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        )
+      case 5:
+        return (
+          <ServiceStepAvailability
+            formData={formData}
+            updateFormData={updateFormData}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        )
+      case 6:
+        return (
+          <ServiceStepFinish
             formData={formData}
             updateFormData={updateFormData}
             onFinish={handleFinish}
@@ -168,7 +206,7 @@ function BusinessSetupWizard() {
   }
 
   return (
-    <WizardLayout currentStep={currentStep} totalSteps={totalSteps}>
+    <WizardLayout currentStep={currentStep} totalSteps={totalSteps} isService={true}>
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -184,4 +222,4 @@ function BusinessSetupWizard() {
   )
 }
 
-export default BusinessSetupWizard
+export default ServiceProviderSetupWizard

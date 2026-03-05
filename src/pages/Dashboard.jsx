@@ -6,9 +6,11 @@ import { getUserProfile, createUserProfile } from '../services/userService'
 import AnalyticsSection from '../components/dashboard/AnalyticsSection'
 import MyListingsSection from '../components/dashboard/MyListingsSection'
 import AddListingForm from '../components/dashboard/AddListingForm'
-import ProfileSection from '../components/dashboard/ProfileSection'
+import AccountSection from '../components/dashboard/AccountSection'
 import StoreSettingsSection from '../components/dashboard/StoreSettingsSection'
-import { HiChartBar, HiViewGrid, HiPlus, HiUser, HiBriefcase, HiShoppingBag, HiCog } from 'react-icons/hi'
+import ServicePublicProfileSection from '../components/dashboard/ServicePublicProfileSection'
+import ServiceLeadsSection from '../components/dashboard/ServiceLeadsSection'
+import { HiChartBar, HiViewGrid, HiPlus, HiUser, HiBriefcase, HiShoppingBag, HiCog, HiUserCircle, HiClipboardList } from 'react-icons/hi'
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview')
@@ -32,7 +34,11 @@ function Dashboard() {
 
       if (userProfile) {
         if ((userProfile.role === 'business' || userProfile.role === 'service') && !userProfile.onboardingComplete) {
-          navigate('/business-setup')
+          if (userProfile.role === 'business') {
+            navigate('/business-setup')
+          } else {
+            navigate('/service-setup')
+          }
           return
         }
 
@@ -47,7 +53,11 @@ function Dashboard() {
           
           if (profile) {
             if ((profile.role === 'business' || profile.role === 'service') && !profile.onboardingComplete) {
-              navigate('/business-setup')
+              if (profile.role === 'business') {
+                navigate('/business-setup')
+              } else {
+                navigate('/service-setup')
+              }
               return
             }
 
@@ -75,6 +85,15 @@ function Dashboard() {
 
     loadProfile()
   }, [currentUser, userProfile, loading, navigate])
+
+  useEffect(() => {
+    const handleNavigateToPublicProfile = () => {
+      setActiveSection('public-profile')
+    }
+
+    window.addEventListener('navigate-to-service-settings', handleNavigateToPublicProfile)
+    return () => window.removeEventListener('navigate-to-service-settings', handleNavigateToPublicProfile)
+  }, [])
 
   if (loading || profileLoading) {
     return (
@@ -137,21 +156,20 @@ function Dashboard() {
           { id: 'my-listings', label: 'My Listings', icon: HiShoppingBag },
           { id: 'add-listing', label: 'Add Listing', icon: HiPlus },
           { id: 'store-settings', label: 'Store Settings', icon: HiCog },
-          { id: 'profile', label: 'Profile', icon: HiUser },
+          { id: 'account', label: 'Account', icon: HiUser },
         ]
       case 'service':
         return [
           { id: 'overview', label: 'Overview', icon: HiChartBar },
-          { id: 'my-listings', label: 'My Services', icon: HiBriefcase },
-          { id: 'add-listing', label: 'Add Service', icon: HiPlus },
-          { id: 'store-settings', label: 'Service Settings', icon: HiCog },
-          { id: 'profile', label: 'Profile', icon: HiUser },
+          { id: 'public-profile', label: 'Public Profile', icon: HiUserCircle },
+          { id: 'leads', label: 'Leads', icon: HiClipboardList },
+          { id: 'account', label: 'Account', icon: HiUser },
         ]
       default:
         return [
           { id: 'overview', label: 'Overview', icon: HiChartBar },
           { id: 'my-listings', label: 'My Orders', icon: HiViewGrid },
-          { id: 'profile', label: 'Profile', icon: HiUser },
+          { id: 'account', label: 'Account', icon: HiUser },
         ]
     }
   }
@@ -159,17 +177,23 @@ function Dashboard() {
   const sections = getSectionsForRole(localProfile?.role || 'customer')
 
   const renderSection = () => {
+    const role = localProfile?.role
+
     switch (activeSection) {
       case 'overview':
         return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
       case 'my-listings':
         return <MyListingsSection />
       case 'add-listing':
-        return <AddListingForm onSuccess={() => setActiveSection('my-listings')} />
+        return role === 'business' ? <AddListingForm onSuccess={() => setActiveSection('my-listings')} /> : <MyListingsSection />
       case 'store-settings':
         return <StoreSettingsSection />
-      case 'profile':
-        return <ProfileSection />
+      case 'public-profile':
+        return <ServicePublicProfileSection />
+      case 'leads':
+        return <ServiceLeadsSection />
+      case 'account':
+        return <AccountSection />
       default:
         return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
     }
@@ -178,7 +202,6 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {/* Welcome Header */}
         {localProfile && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -198,7 +221,6 @@ function Dashboard() {
           </motion.div>
         )}
 
-        {/* Section Tabs - Mobile/Tablet */}
         <div className="mb-6 lg:hidden">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-2 shadow-lg border border-gray-100 dark:border-gray-700 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             <div className="flex gap-2 min-w-max">
@@ -229,9 +251,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Desktop Layout with Sidebar */}
         <div className="grid lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-6">
-          {/* Desktop Sidebar */}
           <aside className="hidden lg:block">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 sticky top-24">
               <h2 className="text-lg font-black mb-4 text-gray-800 dark:text-white px-2 flex items-center gap-2">
@@ -282,7 +302,6 @@ function Dashboard() {
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="min-h-[60vh]">
             <AnimatePresence mode="wait">
               <motion.div
