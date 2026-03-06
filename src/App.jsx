@@ -29,6 +29,8 @@ const Locations = lazy(() => import('./pages/Locations'))
 const Search = lazy(() => import('./pages/Search'))
 const ServiceProviderSetupWizard = lazy(() => import('./pages/ServiceProviderSetupWizard'))
 const Business = lazy(() => import('./pages/Business'))
+const Services = lazy(() => import('./pages/Services'))
+const ServiceProvider = lazy(() => import('./pages/ServiceProvider'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -65,6 +67,16 @@ function AnimatedRoutes() {
           <Route path="business" element={
             <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
               <PageTransition><Business /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="services" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><Services /></PageTransition>
+            </Suspense>
+          } />
+          <Route path="service-provider/:id" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><ServiceProvider /></PageTransition>
             </Suspense>
           } />
           <Route path="login" element={
