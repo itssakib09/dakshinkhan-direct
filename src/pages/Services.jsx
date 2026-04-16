@@ -3,16 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { HiSearch, HiFilter, HiX, HiBriefcase, HiLocationMarker, HiStar, HiCheckCircle, HiXCircle } from 'react-icons/hi'
 import { getServiceProviders, isProviderAvailable } from '../services/serviceProviderService'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { SERVICE_CATEGORIES } from '../data/serviceTypes'
 import { LOCATIONS, ALL_AREAS_LABEL } from '../data/locations'
 
 function Services() {
   const navigate = useNavigate()
-  const { selectedLocation } = useLocation()
+  const { selectedLocation } = useAppLocation()
   
   const [providers, setProviders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedLocationFilter, setSelectedLocationFilter] = useState(selectedLocation)
@@ -31,6 +32,8 @@ function Services() {
 
   const loadProviders = async (loadMore = false) => {
     try {
+      setError(null)
+      
       if (loadMore) {
         setLoadingMore(true)
       } else {
@@ -58,6 +61,7 @@ function Services() {
       setHasMore(result.hasMore)
     } catch (error) {
       console.error('Error loading service providers:', error)
+      setError('Failed to load service providers. Please check your connection.')
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -73,6 +77,7 @@ function Services() {
     setSearchTerm('')
     setSelectedCategory('')
     setSelectedLocationFilter('ALL Areas')
+    setTimeout(() => loadProviders(), 0)
   }
 
   const handleProviderClick = (providerId) => {
@@ -179,14 +184,13 @@ function Services() {
               {/* Location Filter */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                  Service Area
+                  Location
                 </label>
                 <select
                   value={selectedLocationFilter}
                   onChange={(e) => setSelectedLocationFilter(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
                 >
-                  <option value="ALL Areas">{ALL_AREAS_LABEL}</option>
                   {LOCATIONS.map(location => (
                     <option key={location} value={location}>{location}</option>
                   ))}
@@ -251,6 +255,18 @@ function Services() {
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-red-500 dark:text-red-400 font-semibold mb-4">{error}</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadProviders()}
+              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
+            >
+              Try Again
+            </motion.button>
           </div>
         ) : providers.length === 0 ? (
           <motion.div

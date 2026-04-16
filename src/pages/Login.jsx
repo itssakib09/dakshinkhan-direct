@@ -49,7 +49,6 @@ function Login() {
       }
 
       await signIn(emailToUse, password)
-      await new Promise(resolve => setTimeout(resolve, 500))
       navigate('/dashboard')
       
     } catch (error) {

@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { HiBell, HiLogout, HiUser, HiSun, HiMoon, HiMenu, HiSearch } from 'react-icons/hi'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function Header({ onMenuClick }) {
   const { currentUser, userProfile, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const { selectedLocation } = useLocation()
+  const { selectedLocation } = useAppLocation()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)

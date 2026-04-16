@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { HiCheckCircle, HiX } from 'react-icons/hi'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 
 function LocationNotification() {
-  const { showNotification, notificationMessage, hideNotification } = useLocation()
+  const { showNotification, notificationMessage, hideNotification } = useAppLocation()
 
   return (
     <AnimatePresence>

@@ -10,9 +10,8 @@ import {
   doc
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
+import { USE_API, API_URL } from '../config'
 
-const USE_API = import.meta.env.VITE_USE_API === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const PROVIDERS_PER_PAGE = 20
 
 /**
@@ -50,25 +49,13 @@ export async function getServiceProviders(filters = {}) {
   try {
     const usersRef = collection(db, 'users')
     
-    // Build query constraints
+    // Build query constraints - SIMPLIFIED to avoid composite index requirements
     let constraints = [
       where('role', '==', 'service'),
-      where('onboardingComplete', '==', true)
+      where('onboardingComplete', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(PROVIDERS_PER_PAGE * 2) // Fetch more to account for client-side filtering
     ]
-
-    // Add category filter
-    if (category) {
-      constraints.push(where('serviceProfile.servicesOffered', 'array-contains', category))
-    }
-
-    // Add location filter (if not "ALL Areas")
-    if (location && location !== 'ALL Areas') {
-      constraints.push(where('serviceProfile.coverageAreas', 'array-contains', location))
-    }
-
-    // Add ordering
-    constraints.push(orderBy('createdAt', 'desc'))
-    constraints.push(limit(PROVIDERS_PER_PAGE))
 
     // Add pagination
     if (lastDoc) {
@@ -83,7 +70,32 @@ export async function getServiceProviders(filters = {}) {
       ...doc.data()
     }))
 
-    // Client-side search filter (if search term provided)
+    // CLIENT-SIDE FILTERING (avoids Firestore composite index issues)
+    
+    // Filter 1: Provider must have service profile
+    providers = providers.filter(provider => {
+      return provider.serviceProfile && 
+             provider.serviceProfile.servicesOffered && 
+             provider.serviceProfile.servicesOffered.length > 0
+    })
+
+    // Filter 2: Category filter
+    if (category) {
+      providers = providers.filter(provider => {
+        const services = provider.serviceProfile?.servicesOffered || []
+        return services.includes(category)
+      })
+    }
+
+    // Filter 3: Location filter (if not "ALL Areas")
+    if (location && location !== 'ALL Areas') {
+      providers = providers.filter(provider => {
+        const coverageAreas = provider.serviceProfile?.coverageAreas || []
+        return coverageAreas.includes(location)
+      })
+    }
+
+    // Filter 4: Search filter
     if (search) {
       const searchLower = search.toLowerCase()
       providers = providers.filter(provider => {
@@ -96,12 +108,19 @@ export async function getServiceProviders(filters = {}) {
       })
     }
 
+    // Limit to actual page size after filtering
+    const paginatedProviders = providers.slice(0, PROVIDERS_PER_PAGE)
+    const hasMore = providers.length > PROVIDERS_PER_PAGE
+
     const lastDocument = snapshot.docs.length > 0 
       ? snapshot.docs[snapshot.docs.length - 1]
       : null
-    const hasMore = snapshot.docs.length === PROVIDERS_PER_PAGE
 
-    return { providers, lastDoc: lastDocument, hasMore }
+    return { 
+      providers: paginatedProviders, 
+      lastDoc: lastDocument, 
+      hasMore 
+    }
   } catch (error) {
     console.error('Error fetching service providers:', error)
     throw error
@@ -152,27 +171,9 @@ export async function getServiceProviderById(userId) {
  * @returns {boolean}
  */
 export function isProviderAvailable(availability) {
-  if (!availability || !availability.availableNow) return false
-  if (!availability.schedule) return availability.availableNow
-
-  const now = new Date()
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-  const currentDay = dayNames[now.getDay()]
-  
-  const todaySchedule = availability.schedule[currentDay]
-  if (!todaySchedule || todaySchedule.closed || !todaySchedule.available) return false
-
-  const currentTime = now.getHours() * 60 + now.getMinutes()
-  
-  // Parse open time
-  const [openHour, openMin] = todaySchedule.open.split(':').map(Number)
-  const openTime = openHour * 60 + openMin
-  
-  // Parse close time
-  const [closeHour, closeMin] = todaySchedule.close.split(':').map(Number)
-  const closeTime = closeHour * 60 + closeMin
-
-  return currentTime >= openTime && currentTime <= closeTime
+  // Return availableNow flag (your Firebase data doesn't have open/close times)
+  if (!availability) return false
+  return availability.availableNow || false
 }
 
 /**
@@ -209,9 +210,13 @@ export async function getServiceCategories() {
     const categoriesSet = new Set()
     
     snapshot.docs.forEach(doc => {
-      const services = doc.data().serviceProfile?.servicesOffered
-      if (services && Array.isArray(services)) {
-        services.forEach(service => categoriesSet.add(service))
+      const data = doc.data()
+      // Only include categories from providers with complete profiles
+      if (data.serviceProfile?.servicesOffered) {
+        const services = data.serviceProfile.servicesOffered
+        if (Array.isArray(services)) {
+          services.forEach(service => categoriesSet.add(service))
+        }
       }
     })
 

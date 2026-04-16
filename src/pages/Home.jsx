@@ -13,7 +13,7 @@ import {
   HiArrowRight,
   HiSparkles
 } from 'react-icons/hi'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { useEffect, useState } from 'react'
 import { getFeaturedBusinesses, getFeaturedServices } from '../services/homeService'
 
@@ -21,7 +21,7 @@ const USE_API = import.meta.env.VITE_USE_API === 'true'
 
 function Home() {
   const navigate = useNavigate()
-  const { selectedLocation } = useLocation()
+  const { selectedLocation } = useAppLocation()
   const [displayLocation, setDisplayLocation] = useState('Select Your Area')
   const [loading, setLoading] = useState(false)
   

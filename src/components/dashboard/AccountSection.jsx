@@ -1,22 +1,114 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Camera, Save, Lock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { updateUserProfile } from '../../services/userService'
+import { auth } from '../../firebase/config'
+import { reauthenticateWithCredential, EmailAuthProvider, updatePassword } from 'firebase/auth'
 
 function AccountSection() {
-  const { currentUser } = useAuth()
+  const { currentUser, userProfile, refreshUserProfile } = useAuth()
+  
+  // Account form state
+  const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
+  
+  // Password form state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState('')
 
-  const handleSubmit = (e) => {
+  // Load current profile data
+  useEffect(() => {
+    if (userProfile) {
+      setDisplayName(userProfile.displayName || '')
+      setPhone(userProfile.phone || '')
+    }
+  }, [userProfile])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSaving(true)
-    setTimeout(() => setIsSaving(false), 1500)
+    setSaveMessage('')
+    
+    try {
+      await updateUserProfile(currentUser.uid, {
+        displayName,
+        phone
+      })
+      
+      await refreshUserProfile()
+      setSaveMessage('Account updated successfully!')
+      setTimeout(() => setSaveMessage(''), 3000)
+    } catch (error) {
+      console.error('Error updating account:', error)
+      setSaveMessage('Failed to update account. Please try again.')
+      setTimeout(() => setSaveMessage(''), 3000)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault()
-    setIsSaving(true)
-    setTimeout(() => setIsSaving(false), 1500)
+    setIsUpdatingPassword(true)
+    setPasswordMessage('')
+    
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordMessage('All password fields are required')
+      setIsUpdatingPassword(false)
+      setTimeout(() => setPasswordMessage(''), 3000)
+      return
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('New passwords do not match')
+      setIsUpdatingPassword(false)
+      setTimeout(() => setPasswordMessage(''), 3000)
+      return
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordMessage('Password must be at least 6 characters')
+      setIsUpdatingPassword(false)
+      setTimeout(() => setPasswordMessage(''), 3000)
+      return
+    }
+    
+    try {
+      // Re-authenticate user first
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword
+      )
+      await reauthenticateWithCredential(auth.currentUser, credential)
+      
+      // Update password
+      await updatePassword(auth.currentUser, newPassword)
+      
+      setPasswordMessage('Password updated successfully!')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => setPasswordMessage(''), 3000)
+    } catch (error) {
+      console.error('Error updating password:', error)
+      if (error.code === 'auth/wrong-password') {
+        setPasswordMessage('Current password is incorrect')
+      } else if (error.code === 'auth/weak-password') {
+        setPasswordMessage('Password is too weak')
+      } else {
+        setPasswordMessage('Failed to update password. Please try again.')
+      }
+      setTimeout(() => setPasswordMessage(''), 3000)
+    } finally {
+      setIsUpdatingPassword(false)
+    }
   }
 
   return (
@@ -75,7 +167,8 @@ function AccountSection() {
               <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Full Name</label>
               <input
                 type="text"
-                defaultValue={currentUser?.displayName || ''}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your name"
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
               />
@@ -85,7 +178,7 @@ function AccountSection() {
               <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Email</label>
               <input
                 type="email"
-                defaultValue={currentUser?.email || ''}
+                value={currentUser?.email || ''}
                 disabled
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               />
@@ -96,6 +189,8 @@ function AccountSection() {
               <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Phone Number</label>
               <input
                 type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder="+880 XXX-XXXXXXX"
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
               />
@@ -106,9 +201,20 @@ function AccountSection() {
               <input
                 type="text"
                 placeholder="Dakshinkhan, Dhaka"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
+                disabled
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               />
             </div>
+            
+            {saveMessage && (
+              <div className={`p-3 rounded-xl text-sm font-semibold ${
+                saveMessage.includes('success') 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+              }`}>
+                {saveMessage}
+              </div>
+            )}
             
             <div className="pt-4">
               <motion.button
@@ -144,6 +250,8 @@ function AccountSection() {
             <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Current Password</label>
             <input
               type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Enter current password"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
             />
@@ -153,6 +261,8 @@ function AccountSection() {
             <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">New Password</label>
             <input
               type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
             />
@@ -162,20 +272,32 @@ function AccountSection() {
             <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Confirm New Password</label>
             <input
               type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all"
             />
           </div>
           
+          {passwordMessage && (
+            <div className={`p-3 rounded-xl text-sm font-semibold ${
+              passwordMessage.includes('success') 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            }`}>
+              {passwordMessage}
+            </div>
+          )}
+          
           <motion.button
             type="submit"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={isSaving}
+            disabled={isUpdatingPassword}
             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all inline-flex items-center gap-2"
           >
             <Lock size={18} />
-            {isSaving ? 'Updating...' : 'Update Password'}
+            {isUpdatingPassword ? 'Updating...' : 'Update Password'}
           </motion.button>
         </form>
       </motion.div>

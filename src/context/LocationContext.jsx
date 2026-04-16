@@ -2,10 +2,10 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const LocationContext = createContext()
 
-export function useLocation() {
+export function useAppLocation() {
   const context = useContext(LocationContext)
   if (!context) {
-    throw new Error('useLocation must be used within LocationProvider')
+    throw new Error('useAppLocation must be used within LocationProvider')
   }
   return context
 }

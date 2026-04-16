@@ -65,7 +65,7 @@ function Signup() {
           error = 'Name must be at least 2 characters'
         } else if (value.trim().length > 50) {
           error = 'Name is too long (max 50 characters)'
-        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+        } else if (!/^[a-zA-Z\u00C0-\u024F\u0980-\u09FF\s]+$/.test(value)) {
           error = 'Name can only contain letters and spaces'
         }
         break
@@ -181,8 +181,6 @@ function Signup() {
       console.log('✅ [SIGNUP FORM] Signup successful!')
       console.log('Profile created:', result.profile)
 
-      await new Promise(resolve => setTimeout(resolve, 500))
-
 if (role === 'business') {
   navigate('/business-setup')
 } else if (role === 'service') {
@@ -197,116 +195,119 @@ if (role === 'business') {
       console.error('Error:', error)
       console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-      const friendlyMessage = getFriendlyAuthError(error)
-      setError(friendlyMessage)
-    } finally {
+      setError(getFriendlyAuthError(error))
       setLoading(false)
     }
   }
 
   async function handleGoogleSignIn() {
+    if (!role) {
+      setErrors(prev => ({ ...prev, role: 'Please select your role to continue' }))
+      setTouched(prev => ({ ...prev, role: true }))
+      return
+    }
+
     setError('')
     setLoading(true)
 
     try {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('🔵 GOOGLE SIGNUP')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      
-      await signInWithGoogle()
-      
-      console.log('✅ Google signup complete - redirecting...')
-      
-      navigate('/')
-      
-    } catch (error) {
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('❌ GOOGLE SIGNUP FAILED')
-      console.error('Error:', error)
-      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('🔵 [GOOGLE SIGN IN] Starting Google sign-in flow...')
+      console.log('Selected role:', role)
 
-      let errorMessage = 'Failed to sign in with Google. '
+      const result = await signInWithGoogle(role)
       
-      if (error.message?.includes('cancelled') || error.message?.includes('closed')) {
-        errorMessage = 'Sign-in was cancelled. Please try again.'
-      } else if (error.message?.includes('blocked')) {
-        errorMessage = 'Pop-up was blocked by your browser. Please allow pop-ups and try again.'
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        errorMessage = 'An account already exists with this email using a different sign-in method.'
+      console.log('✅ [GOOGLE SIGN IN] Success!')
+      console.log('Is new user:', result.isNewUser)
+
+      if (result.isNewUser) {
+        if (role === 'business') {
+          navigate('/business-setup')
+        } else if (role === 'service') {
+          navigate('/service-setup')
+        } else {
+          navigate('/')
+        }
       } else {
-        errorMessage += error.message
+        navigate('/')
       }
-      
-      setError(errorMessage)
-    } finally {
+    } catch (error) {
+      console.error('❌ [GOOGLE SIGN IN] Failed:', error)
+      setError(getFriendlyAuthError(error))
       setLoading(false)
     }
   }
 
-  const passwordStrength = checkPasswordStrength(password)
+  const passwordStrength = password ? checkPasswordStrength(password) : null
 
   return (
-    <div className="min-h-[90vh] bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-md"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 px-8 py-10 text-center">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">
-              Join Dakshinkhan Direct
-            </h1>
-            <p className="text-primary-100">Create your account to get started</p>
-          </div>
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.5 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200 }}
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl mb-4 shadow-lg"
+          >
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </motion.div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Create Account
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Join Dakshinkhan Direct today
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl"
-              >
-                <p className="text-sm font-semibold">{error}</p>
-              </motion.div>
+              <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl">
+                {error}
+              </div>
             )}
 
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                I am a...
+                I want to join as
               </label>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {roles.map((r) => {
                   const Icon = r.icon
-                  const isSelected = role === r.id
-                  const hasError = touched.role && errors.role
-
                   return (
                     <motion.button
                       key={r.id}
                       type="button"
                       onClick={() => handleChange('role', r.id)}
                       onBlur={() => handleBlur('role')}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`p-3 sm:p-4 rounded-xl border-2 transition-all text-center ${
-                        isSelected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 shadow-lg'
-                          : hasError
-                          ? 'border-red-300 dark:border-red-700 bg-white dark:bg-gray-700'
-                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-primary-300'
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        role === r.id
+                          ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500 dark:border-primary-400'
+                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
-                      <Icon 
-                        size={20} 
-                        className={`${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'} mb-1 sm:mb-2 mx-auto`} 
+                      <Icon
+                        size={24}
+                        className={`mx-auto mb-2 ${
+                          role === r.id
+                            ? 'text-primary-600 dark:text-primary-400'
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}
                       />
-                      <p className={`font-bold text-xs sm:text-sm ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'}`}>
+                      <div className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                         {r.title}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         {r.description}
-                      </p>
+                      </div>
                     </motion.button>
                   )
                 })}
@@ -355,7 +356,7 @@ if (role === 'business') {
                   value={email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   onBlur={() => handleBlur('email')}
-                  placeholder="your@email.com"
+                  placeholder="your.email@example.com"
                   className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl transition-all ${
                     touched.email && errors.email
                       ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'

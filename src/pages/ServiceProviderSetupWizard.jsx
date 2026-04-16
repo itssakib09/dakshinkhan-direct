@@ -95,6 +95,15 @@ function ServiceProviderSetupWizard() {
     }
   }
 
+  const computeAvailableNow = (schedule) => {
+    if (!schedule) return false
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const today = dayNames[new Date().getDay()]
+    const todaySchedule = schedule[today]
+    if (!todaySchedule) return false
+    return todaySchedule.available === true
+  }
+
   const handleFinish = async () => {
     try {
       setSaving(true)
@@ -112,7 +121,7 @@ function ServiceProviderSetupWizard() {
           pricing: [],
           coverageAreas: formData.coverageAreas,
           availability: {
-            availableNow: true,
+            availableNow: computeAvailableNow(formData.availability),
             schedule: formData.availability
           }
         },

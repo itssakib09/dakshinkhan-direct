@@ -31,6 +31,7 @@ const ServiceProviderSetupWizard = lazy(() => import('./pages/ServiceProviderSet
 const Business = lazy(() => import('./pages/Business'))
 const Services = lazy(() => import('./pages/Services'))
 const ServiceProvider = lazy(() => import('./pages/ServiceProvider'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -105,9 +106,11 @@ function AnimatedRoutes() {
             </Suspense>
           } />
           <Route path="/seed" element={
-            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
-              <PageTransition><SeedPage /></PageTransition>
-            </Suspense>
+            <ProtectedRoute requireAdmin={true}>
+              <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+                <PageTransition><SeedPage /></PageTransition>
+              </Suspense>
+            </ProtectedRoute>
           } />
           <Route path="locations" element={
             <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
@@ -158,6 +161,11 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={
+            <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+              <PageTransition><NotFound /></PageTransition>
+            </Suspense>
+          } />
         </Route>
       </Routes>
     </AnimatePresence>

@@ -3,14 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { HiSearch, HiX, HiLocationMarker, HiFilter } from 'react-icons/hi'
 import { useSearch } from '../context/SearchContext'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { searchAll } from '../services/searchService'
 
 function Search() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { searchQuery, setSearchQuery, searchResults, setSearchResults, searchLoading, setSearchLoading } = useSearch()
-  const { selectedLocation } = useLocation()
+  const { selectedLocation } = useAppLocation()
   const [localQuery, setLocalQuery] = useState(searchParams.get('q') || '')
   const [filterType, setFilterType] = useState('all')
 

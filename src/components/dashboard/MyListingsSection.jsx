@@ -7,7 +7,7 @@ import { formatDistanceToNow } from 'date-fns'
 import EditListingModal from './EditListingModal'
 import DeleteConfirmModal from './DeleteConfirmModal'
 
-function MyListingsSection() {
+function MyListingsSection({ onNavigateToAddListing }) {
   const { currentUser } = useAuth()
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(false)
@@ -169,6 +169,7 @@ function MyListingsSection() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={onNavigateToAddListing}
             className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-4 py-2 rounded-xl font-semibold shadow-lg transition-all inline-flex items-center gap-2"
           >
             <Plus size={18} />
@@ -190,6 +191,7 @@ function MyListingsSection() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={onNavigateToAddListing}
             className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all"
           >
             Create Your First Listing

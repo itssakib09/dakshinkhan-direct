@@ -1,17 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  updateProfile,
-  setPersistence,
-  browserLocalPersistence
-} from 'firebase/auth'
-import { auth } from '../firebase/config'
-import { createUserProfile, getUserProfile, updateUserProfile } from '../services/userService'
+  signUp as authSignUp,
+  signIn as authSignIn,
+  signInWithGoogle as authSignInWithGoogle,
+  logout as authLogout,
+  onAuthStateChanged
+} from '../services/authservice'
+import { getUserProfile } from '../services/userService'
 
 const AuthContext = createContext()
 
@@ -28,17 +23,6 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
-
-  useEffect(() => {
-    console.log('🔧 [Session] Setting auth persistence to LOCAL')
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log('✅ [Session] Persistence enabled')
-      })
-      .catch((error) => {
-        console.error('❌ [Session] Failed to set persistence:', error)
-      })
-  }, [])
 
   /**
    * Refresh user profile from Firestore
@@ -66,38 +50,16 @@ export function AuthProvider({ children }) {
     console.log('🔵 [AuthContext] Starting signup...')
     
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const user = userCredential.user
-
-      if (displayName) {
-        await updateProfile(user, { displayName })
-      }
-
-      const profileData = await createUserProfile(user.uid, {
-        email: user.email,
-        displayName: displayName || '',
-        phone: additionalData.phone || '',
-        role: additionalData.role || 'customer',
-        photoURL: ''
-      })
-
-      setUserProfile(profileData)
+      const { user, profile } = await authSignUp(email, password, displayName, additionalData)
+      
+      setCurrentUser(user)
+      setUserProfile(profile)
 
       console.log('✅ [Session] New user session created')
-      return { user, profile: profileData }
+      return { user, profile }
 
     } catch (error) {
       console.error('❌ [AuthContext] signUp error:', error)
-      
-      if (error.message?.includes('profile')) {
-        try {
-          await auth.currentUser?.delete()
-          console.log('✅ Rollback complete')
-        } catch (rollbackError) {
-          console.error('❌ Rollback failed:', rollbackError)
-        }
-      }
-      
       throw error
     }
   }
@@ -105,48 +67,31 @@ export function AuthProvider({ children }) {
   async function signIn(email, password) {
     console.log('🔵 [AuthContext] Signing in...')
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const { user } = await authSignIn(email, password)
+      setCurrentUser(user)
       console.log('✅ [Session] User session restored')
-      return userCredential
+      return { user }
     } catch (error) {
       console.error('❌ [AuthContext] signIn error:', error)
       throw error
     }
   }
 
-  async function signInWithGoogle() {
+  async function signInWithGoogle(role = null) {
     console.log('🔵 [AuthContext] Starting Google sign-in...')
+    if (role) {
+      console.log('   - Role provided:', role)
+    }
     
     try {
-      const provider = new GoogleAuthProvider()
-      provider.addScope('profile')
-      provider.addScope('email')
+      const { user, profile } = await authSignInWithGoogle(role)
       
-      const result = await signInWithPopup(auth, provider)
-      const user = result.user
-
-      let profile = await getUserProfile(user.uid)
-
-      if (!profile) {
-        const profileData = {
-          email: user.email || '',
-          displayName: user.displayName || user.email?.split('@')[0] || 'User',
-          photoURL: user.photoURL || '',
-          phone: '',
-          role: 'customer'
-        }
-        
-        profile = await createUserProfile(user.uid, profileData)
-      } else {
-        if (user.photoURL && user.photoURL !== profile.photoURL) {
-          await updateUserProfile(user.uid, { photoURL: user.photoURL })
-          profile.photoURL = user.photoURL
-        }
-      }
-
+      setCurrentUser(user)
       setUserProfile(profile)
+      
       console.log('✅ [Session] Google user session created')
-      return result
+      console.log('   - Profile role:', profile.role)
+      return { user, profile }
 
     } catch (error) {
       console.error('❌ [AuthContext] Google sign-in error:', error)
@@ -157,7 +102,7 @@ export function AuthProvider({ children }) {
   async function logout() {
     console.log('🔵 [Session] Logging out...')
     try {
-      await signOut(auth)
+      await authLogout()
       setCurrentUser(null)
       setUserProfile(null)
       console.log('✅ [Session] Session cleared')
@@ -170,7 +115,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     console.log('👂 [Session] Setting up auth state listener...')
     
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(async (user) => {
       console.log('🔄 [Session] Auth state changed')
       
       if (user) {

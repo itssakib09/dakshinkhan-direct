@@ -31,7 +31,7 @@ function Layout() {
 
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         
-        <main className="flex-1 w-full min-w-0 overflow-x-hidden relative z-10 pb-20 md:pb-0">
+        <main className="flex-1 w-full min-w-0 overflow-x-hidden relative z-10 pb-24 md:pb-0">
           <Outlet />
         </main>
       </div>

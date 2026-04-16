@@ -3,16 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker, HiStar, HiClock } from 'react-icons/hi'
 import { getBusinesses, isBusinessOpen } from '../services/businessService'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { BUSINESS_TYPES } from '../data/businessTypes'
 import { LOCATIONS, ALL_AREAS_LABEL } from '../data/locations'
 
 function Business() {
   const navigate = useNavigate()
-  const { selectedLocation } = useLocation()
+  const { selectedLocation } = useAppLocation()
   
   const [businesses, setBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedLocationFilter, setSelectedLocationFilter] = useState(selectedLocation)
@@ -31,6 +32,8 @@ function Business() {
 
   const loadBusinesses = async (loadMore = false) => {
     try {
+      setError(null)
+      
       if (loadMore) {
         setLoadingMore(true)
       } else {
@@ -58,6 +61,7 @@ function Business() {
       setHasMore(result.hasMore)
     } catch (error) {
       console.error('Error loading businesses:', error)
+      setError('Failed to load businesses. Please check your connection.')
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -73,6 +77,7 @@ function Business() {
     setSearchTerm('')
     setSelectedCategory('')
     setSelectedLocationFilter('ALL Areas')
+    setTimeout(() => loadBusinesses(), 0)
   }
 
   const handleBusinessClick = (businessId) => {
@@ -186,7 +191,6 @@ function Business() {
                   onChange={(e) => setSelectedLocationFilter(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
                 >
-                  <option value="ALL Areas">{ALL_AREAS_LABEL}</option>
                   {LOCATIONS.map(location => (
                     <option key={location} value={location}>{location}</option>
                   ))}
@@ -251,6 +255,18 @@ function Business() {
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-red-500 dark:text-red-400 font-semibold mb-4">{error}</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadBusinesses()}
+              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
+            >
+              Try Again
+            </motion.button>
           </div>
         ) : businesses.length === 0 ? (
           <motion.div

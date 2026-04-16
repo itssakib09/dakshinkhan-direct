@@ -35,6 +35,7 @@ function AddListingForm({ onSuccess }) {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState('')
   const [catalogLoading, setCatalogLoading] = useState(true)
   
   useEffect(() => {
@@ -230,6 +231,9 @@ function AddListingForm({ onSuccess }) {
       
       await createListing(listingData)
       
+      setSuccessMessage('Listing created successfully! Pending admin approval.')
+      setTimeout(() => setSuccessMessage(''), 4000)
+      
       if (onSuccess) onSuccess()
       
       setFormData({
@@ -250,8 +254,6 @@ function AddListingForm({ onSuccess }) {
       setImageFiles([])
       setImagePreviews([])
       setUploadProgress([])
-      
-      alert('✅ Listing created successfully! Pending admin approval.')
       
     } catch (err) {
       setError(err.message)
@@ -623,6 +625,18 @@ function AddListingForm({ onSuccess }) {
           </div>
           
           {/* Submit Button */}
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-4"
+            >
+              <p className="text-green-800 dark:text-green-400 font-semibold text-center">
+                {successMessage}
+              </p>
+            </motion.div>
+          )}
+          
           <motion.button
             type="submit"
             whileHover={{ scale: loading || imageFiles.length === 0 ? 1 : 1.02 }}

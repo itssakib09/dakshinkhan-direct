@@ -10,9 +10,8 @@ import {
   doc
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
+import { USE_API, API_URL } from '../config'
 
-const USE_API = import.meta.env.VITE_USE_API === 'false'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const BUSINESSES_PER_PAGE = 20
 
 /**
@@ -50,28 +49,13 @@ export async function getBusinesses(filters = {}) {
   try {
     const usersRef = collection(db, 'users')
     
-    // Build query constraints
+    // Build query constraints - SIMPLIFIED to avoid composite index requirements
     let constraints = [
       where('role', '==', 'business'),
-      where('onboardingComplete', '==', true)
+      where('onboardingComplete', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(BUSINESSES_PER_PAGE * 2) // Fetch more to account for client-side filtering
     ]
-
-    // Add category filter
-    if (category) {
-      constraints.push(where('storeSettings.businessType', '==', category))
-    }
-
-    // Add location filter (if not "ALL Areas")
-    if (location && location !== 'ALL Areas') {
-      constraints.push(where('storeSettings.serviceAreas', 'array-contains', location))
-    }
-
-    // Add store active filter
-    constraints.push(where('storeSettings.storeActive', '==', true))
-
-    // Add ordering
-    constraints.push(orderBy('createdAt', 'desc'))
-    constraints.push(limit(BUSINESSES_PER_PAGE))
 
     // Add pagination
     if (lastDoc) {
@@ -86,7 +70,29 @@ export async function getBusinesses(filters = {}) {
       ...doc.data()
     }))
 
-    // Client-side search filter (if search term provided)
+    // CLIENT-SIDE FILTERING (avoids Firestore composite index issues)
+    
+    // Filter 1: Store must be active
+    businesses = businesses.filter(business => {
+      return business.storeSettings?.storeActive === true
+    })
+
+    // Filter 2: Category filter
+    if (category) {
+      businesses = businesses.filter(business => {
+        return business.storeSettings?.businessType === category
+      })
+    }
+
+    // Filter 3: Location filter (if not "ALL Areas")
+    if (location && location !== 'ALL Areas') {
+      businesses = businesses.filter(business => {
+        const serviceAreas = business.storeSettings?.serviceAreas || []
+        return serviceAreas.includes(location)
+      })
+    }
+
+    // Filter 4: Search filter
     if (search) {
       const searchLower = search.toLowerCase()
       businesses = businesses.filter(business => {
@@ -96,12 +102,19 @@ export async function getBusinesses(filters = {}) {
       })
     }
 
+    // Limit to actual page size after filtering
+    const paginatedBusinesses = businesses.slice(0, BUSINESSES_PER_PAGE)
+    const hasMore = businesses.length > BUSINESSES_PER_PAGE
+
     const lastDocument = snapshot.docs.length > 0 
       ? snapshot.docs[snapshot.docs.length - 1]
       : null
-    const hasMore = snapshot.docs.length === BUSINESSES_PER_PAGE
 
-    return { businesses, lastDoc: lastDocument, hasMore }
+    return { 
+      businesses: paginatedBusinesses, 
+      lastDoc: lastDocument, 
+      hasMore 
+    }
   } catch (error) {
     console.error('Error fetching businesses:', error)
     throw error
@@ -173,17 +186,20 @@ export async function getBusinessCategories() {
     const q = query(
       usersRef,
       where('role', '==', 'business'),
-      where('onboardingComplete', '==', true),
-      where('storeSettings.storeActive', '==', true)
+      where('onboardingComplete', '==', true)
     )
 
     const snapshot = await getDocs(q)
     const categoriesSet = new Set()
     
     snapshot.docs.forEach(doc => {
-      const businessType = doc.data().storeSettings?.businessType
-      if (businessType) {
-        categoriesSet.add(businessType)
+      const data = doc.data()
+      // Only include categories from active stores
+      if (data.storeSettings?.storeActive === true) {
+        const businessType = data.storeSettings?.businessType
+        if (businessType) {
+          categoriesSet.add(businessType)
+        }
       }
     })
 

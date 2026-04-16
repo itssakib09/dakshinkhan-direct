@@ -6,22 +6,12 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
-  setPersistence,
-  browserLocalPersistence
+  
 } from 'firebase/auth'
 import { collection, query, where, getDocs, limit } from 'firebase/firestore'
 import { auth, db } from '../firebase/config'
 import { createUserProfile, getUserProfile, updateUserProfile } from './userService'
-
-const USE_API = import.meta.env.VITE_USE_API === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-
-// Set persistence on module load for Firebase mode
-if (!USE_API) {
-  setPersistence(auth, browserLocalPersistence)
-    .then(() => console.log('✅ [authService] Firebase persistence enabled'))
-    .catch((error) => console.error('❌ [authService] Failed to set persistence:', error))
-}
+import { USE_API, API_URL } from '../config'
 
 /**
  * Sign up with email and password
@@ -161,8 +151,9 @@ export async function signIn(email, password) {
 
 /**
  * Sign in with Google
+ * @param {string} role - Optional role for new user signup ('business', 'service', 'customer')
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(role = null) {
   if (USE_API) {
     try {
       // For API mode, you'll need to implement Google OAuth flow
@@ -186,17 +177,20 @@ export async function signInWithGoogle() {
     let profile = await getUserProfile(user.uid)
 
     if (!profile) {
+      // New user - create profile with provided role or default to customer
       const profileData = {
         email: user.email || '',
         displayName: user.displayName || user.email?.split('@')[0] || 'User',
         photoURL: user.photoURL || '',
         phone: '',
-        role: 'customer'
+        role: role || 'customer'
       }
       
+      console.log('Creating new Google user profile with role:', profileData.role)
       profile = await createUserProfile(user.uid, profileData)
     } else {
-      // Update photo if changed
+      // Existing user - keep existing role, update photo if changed
+      console.log('Existing user, keeping role:', profile.role)
       if (user.photoURL && user.photoURL !== profile.photoURL) {
         await updateUserProfile(user.uid, { photoURL: user.photoURL })
         profile.photoURL = user.photoURL

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { TrendingUp, Eye, ShoppingBag, Users, Phone, Star, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
-function AnalyticsSection({ onNavigateToAddListing }) {
+function AnalyticsSection({ onNavigateToAddListing, onNavigateToProfile }) {
   const { userProfile } = useAuth()
   const isService = userProfile?.role === 'service'
   
@@ -136,12 +136,10 @@ function AnalyticsSection({ onNavigateToAddListing }) {
                   className="bg-gradient-to-r from-orange-500 to-orange-600 h-full rounded-full"
                 />
               </div>
-              <motion.a
-                href="#"
+              <motion.button
                 onClick={(e) => {
                   e.preventDefault()
-                  const event = new CustomEvent('navigate-to-service-settings')
-                  window.dispatchEvent(event)
+                  if (onNavigateToProfile) onNavigateToProfile()
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -149,7 +147,7 @@ function AnalyticsSection({ onNavigateToAddListing }) {
               >
                 <CheckCircle size={20} />
                 Complete Profile Now
-              </motion.a>
+              </motion.button>
             </div>
           </div>
         </motion.div>

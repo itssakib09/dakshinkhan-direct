@@ -1,8 +1,6 @@
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
-
-const USE_API = import.meta.env.VITE_USE_API === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+import { USE_API, API_URL } from '../config'
 
 export async function createUserProfile(uid, userData) {
   if (USE_API) {
@@ -38,6 +36,7 @@ export async function createUserProfile(uid, userData) {
       phone: userData.phone || '',
       role: userData.role || 'customer',
       photoURL: userData.photoURL || '',
+      onboardingComplete: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       isActive: true
@@ -117,7 +116,7 @@ export async function updateUserProfile(uid, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     }
-    await setDoc(userRef, updateData, { merge: true })
+    await updateDoc(userRef, updateData)
     console.log('✅ User profile updated')
     return updateData
   } catch (error) {

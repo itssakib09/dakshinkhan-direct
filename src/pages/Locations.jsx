@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HiLocationMarker, HiCheckCircle, HiSearch, HiX, HiGlobe } from 'react-icons/hi'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 import { LOCATIONS } from '../data/locations'
 
 function Locations() {
   const navigate = useNavigate()
-  const { saveLocation, previousPage } = useLocation()
+  const { saveLocation, previousPage } = useAppLocation()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredLocations = LOCATIONS.filter(location =>

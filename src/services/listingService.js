@@ -15,9 +15,8 @@ import {
 } from 'firebase/firestore'
 import { ref, deleteObject } from 'firebase/storage'
 import { db, storage } from '../firebase/config'
+import { USE_API, API_URL } from '../config'
 
-const USE_API = import.meta.env.VITE_USE_API === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const LISTINGS_PER_PAGE = 10
 
 export async function createListing(listingData) {
@@ -106,7 +105,7 @@ export async function getMyListings(userId, lastDocument = null) {
     }))
 
     const lastDoc = snapshot.docs.length > 0 
-      ? { page: lastDocument?.page ? lastDocument.page + 1 : 1 }
+      ? snapshot.docs[snapshot.docs.length - 1]
       : null
     const hasMore = snapshot.docs.length === LISTINGS_PER_PAGE
 

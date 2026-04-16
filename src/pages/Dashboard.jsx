@@ -66,7 +66,7 @@ function Dashboard() {
             const newProfile = {
               email: currentUser.email,
               displayName: currentUser.displayName || 'User',
-              role: 'business',
+              role: 'customer',
               phone: '',
               photoURL: currentUser.photoURL || ''
             }
@@ -85,15 +85,6 @@ function Dashboard() {
 
     loadProfile()
   }, [currentUser, userProfile, loading, navigate])
-
-  useEffect(() => {
-    const handleNavigateToPublicProfile = () => {
-      setActiveSection('public-profile')
-    }
-
-    window.addEventListener('navigate-to-service-settings', handleNavigateToPublicProfile)
-    return () => window.removeEventListener('navigate-to-service-settings', handleNavigateToPublicProfile)
-  }, [])
 
   if (loading || profileLoading) {
     return (
@@ -181,11 +172,11 @@ function Dashboard() {
 
     switch (activeSection) {
       case 'overview':
-        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
+        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} onNavigateToProfile={() => setActiveSection('public-profile')} />
       case 'my-listings':
-        return <MyListingsSection />
+        return <MyListingsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
       case 'add-listing':
-        return role === 'business' ? <AddListingForm onSuccess={() => setActiveSection('my-listings')} /> : <MyListingsSection />
+        return role === 'business' ? <AddListingForm onSuccess={() => setActiveSection('my-listings')} /> : <MyListingsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
       case 'store-settings':
         return <StoreSettingsSection />
       case 'public-profile':
@@ -195,7 +186,7 @@ function Dashboard() {
       case 'account':
         return <AccountSection />
       default:
-        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} />
+        return <AnalyticsSection onNavigateToAddListing={() => setActiveSection('add-listing')} onNavigateToProfile={() => setActiveSection('public-profile')} />
     }
   }
 

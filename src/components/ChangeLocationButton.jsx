@@ -1,12 +1,12 @@
 import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { HiLocationMarker } from 'react-icons/hi'
-import { useLocation } from '../context/LocationContext'
+import { useAppLocation } from '../context/LocationContext'
 
 function ChangeLocationButton() {
   const navigate = useNavigate()
   const routerLocation = useRouterLocation()
-  const { selectedLocation, savePreviousPage } = useLocation()
+  const { selectedLocation, savePreviousPage } = useAppLocation()
 
   const handleChangeLocation = () => {
     savePreviousPage(routerLocation.pathname)
