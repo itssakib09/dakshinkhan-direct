@@ -1,16 +1,11 @@
-// src/services/homeService.js
+// homeService.js
+import { USE_API, API_URL } from '../config'
 
-const USE_API = import.meta.env.VITE_USE_API === "true";
-const API_URL = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token") || "";
 
-// Fallback mock data (keeps Home.jsx working today)
 const mockFeaturedBusinesses = [];
 const mockFeaturedServices = [];
 
-/**
- * Get featured businesses
- */
 export async function getFeaturedBusinesses() {
   if (!USE_API) {
     return mockFeaturedBusinesses;
@@ -29,9 +24,6 @@ export async function getFeaturedBusinesses() {
   }
 }
 
-/**
- * Get featured services
- */
 export async function getFeaturedServices() {
   if (!USE_API) {
     return mockFeaturedServices;

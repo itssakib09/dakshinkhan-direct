@@ -108,7 +108,7 @@ function Store() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="animate-pulse space-y-6">
             <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
@@ -126,7 +126,7 @@ function Store() {
 
   if (error || !business) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -161,7 +161,7 @@ function Store() {
   const serviceAreasDisplay = storeSettings.serviceAreas?.join(', ') || 'Dakshinkhan'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Back Button */}
         <motion.button

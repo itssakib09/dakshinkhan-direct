@@ -11,7 +11,8 @@ import { WEEK_DAYS, DAY_LABELS } from '../../data/storeHours'
 function ServicePublicProfileSection() {
   const { currentUser, userProfile, refreshUserProfile } = useAuth()
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingProfile, setUploadingProfile] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [searchService, setSearchService] = useState('')
@@ -129,16 +130,17 @@ function ServicePublicProfileSection() {
     const file = e.target.files[0]
     if (file) {
       try {
-        setUploading(true)
-        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/`, (progress) => {
+        setUploadingCover(true)
+        setError(null)
+        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/cover/`, (progress) => {
           console.log(`Cover photo upload: ${progress.toFixed(0)}%`)
         })
         setFormData(prev => ({ ...prev, coverPhoto: url }))
       } catch (error) {
         console.error('Error uploading cover photo:', error)
-        setError(error.message || 'Failed to upload cover photo')
+        setError('Failed to upload cover photo. Please try again.')
       } finally {
-        setUploading(false)
+        setUploadingCover(false)
       }
     }
   }
@@ -147,16 +149,17 @@ function ServicePublicProfileSection() {
     const file = e.target.files[0]
     if (file) {
       try {
-        setUploading(true)
-        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/`, (progress) => {
+        setUploadingProfile(true)
+        setError(null)
+        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/profile/`, (progress) => {
           console.log(`Profile photo upload: ${progress.toFixed(0)}%`)
         })
         setFormData(prev => ({ ...prev, profilePhoto: url }))
       } catch (error) {
         console.error('Error uploading profile photo:', error)
-        setError(error.message || 'Failed to upload profile photo')
+        setError('Failed to upload profile photo. Please try again.')
       } finally {
-        setUploading(false)
+        setUploadingProfile(false)
       }
     }
   }
@@ -325,16 +328,23 @@ function ServicePublicProfileSection() {
                     <Upload size={48} />
                   </div>
                 )}
-                <label className="absolute bottom-4 right-4 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl cursor-pointer shadow-lg transition-all">
-                  <Camera size={20} />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverPhotoUpload}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
+                {uploadingCover ? (
+                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mb-2"></div>
+                    <p className="text-white font-semibold">Uploading...</p>
+                  </div>
+                ) : (
+                  <label className="absolute bottom-4 right-4 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl cursor-pointer shadow-lg transition-all">
+                    <Camera size={20} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverPhotoUpload}
+                      disabled={uploadingCover}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
@@ -351,18 +361,28 @@ function ServicePublicProfileSection() {
                       <User size={32} />
                     </div>
                   )}
+                  {uploadingProfile && (
+                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
+                    </div>
+                  )}
                 </div>
-                <label className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl cursor-pointer shadow-lg transition-all flex items-center gap-2">
-                  <Camera size={18} />
-                  Upload Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePhotoUpload}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
+                {!uploadingProfile && (
+                  <label className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl cursor-pointer shadow-lg transition-all flex items-center gap-2">
+                    <Camera size={18} />
+                    Upload Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePhotoUpload}
+                      disabled={uploadingProfile}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                {uploadingProfile && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Uploading...</p>
+                )}
               </div>
             </div>
           </div>
@@ -683,11 +703,11 @@ function ServicePublicProfileSection() {
           type="submit"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          disabled={saving || uploading}
+          disabled={saving || uploadingCover || uploadingProfile}
           className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
         >
           <Save size={20} />
-          {uploading ? 'Uploading Photos...' : saving ? 'Saving Profile...' : 'Save Public Profile'}
+          {uploadingCover || uploadingProfile ? 'Uploading Photos...' : saving ? 'Saving Profile...' : 'Save Public Profile'}
         </motion.button>
       </form>
     </div>

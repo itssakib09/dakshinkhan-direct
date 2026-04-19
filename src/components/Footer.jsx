@@ -23,7 +23,7 @@ function Footer() {
   ]
 
   return (
-    <footer className="hidden lg:block relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 dark:from-gray-900 dark:via-gray-800 dark:to-black transition-colors duration-300">
+    <footer className="hidden md:block relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 dark:from-gray-900 dark:via-gray-800 dark:to-black transition-colors duration-300">
       
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 mb-6 sm:mb-8">

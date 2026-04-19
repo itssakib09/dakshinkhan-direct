@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker, HiStar, HiClock } from 'react-icons/hi'
+import { HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker, HiStar, HiClock, HiViewGrid, HiArrowLeft } from 'react-icons/hi'
 import { getBusinesses, isBusinessOpen } from '../services/businessService'
 import { useAppLocation } from '../context/LocationContext'
 import { BUSINESS_TYPES } from '../data/businessTypes'
@@ -10,6 +10,8 @@ import { LOCATIONS, ALL_AREAS_LABEL } from '../data/locations'
 function Business() {
   const navigate = useNavigate()
   const { selectedLocation } = useAppLocation()
+  const [searchParams] = useSearchParams()
+  const categoryParam = searchParams.get('category')
   
   const [businesses, setBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,10 +23,19 @@ function Business() {
   const [hasMore, setHasMore] = useState(false)
   const [lastDoc, setLastDoc] = useState(null)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [showCategories, setShowCategories] = useState(!categoryParam)
 
   useEffect(() => {
-    loadBusinesses()
-  }, [selectedCategory, selectedLocationFilter])
+    if (categoryParam) {
+      setSelectedCategory(categoryParam)
+    }
+  }, [categoryParam])
+
+  useEffect(() => {
+    if (!showCategories) {
+      loadBusinesses()
+    }
+  }, [selectedCategory, selectedLocationFilter, showCategories])
 
   useEffect(() => {
     setSelectedLocationFilter(selectedLocation)
@@ -84,13 +95,79 @@ function Business() {
     navigate(`/store/${businessId}`)
   }
 
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category)
+    setShowCategories(false)
+  }
+
+  const handleBackToCategories = () => {
+    setSelectedCategory('')
+    setShowCategories(true)
+  }
+
   const getBusinessRating = (business) => {
     // Placeholder - implement when reviews are added
     return 0
   }
 
+  if (showCategories) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+              Find Businesses
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Choose a category to browse
+            </p>
+          </motion.div>
+
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowCategories(false)}
+            className="w-full mb-6 px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-3"
+          >
+            <HiViewGrid size={24} />
+            All Businesses
+          </motion.button>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {BUSINESS_TYPES.map((category, index) => (
+              <motion.button
+                key={category}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleCategorySelect(category)}
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
+              >
+                <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <HiShoppingBag size={24} className="text-white" />
+                </div>
+                <p className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2">
+                  {category}
+                </p>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 ">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
         <motion.div
@@ -98,6 +175,18 @@ function Business() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
+          {selectedCategory && (
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              whileHover={{ x: -4 }}
+              onClick={handleBackToCategories}
+              className="mb-4 flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors"
+            >
+              <HiArrowLeft size={20} />
+              All Categories
+            </motion.button>
+          )}
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2">
             Discover Businesses
           </h1>
@@ -191,6 +280,7 @@ function Business() {
                   onChange={(e) => setSelectedLocationFilter(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
                 >
+                  <option value="ALL Areas">{ALL_AREAS_LABEL}</option>
                   {LOCATIONS.map(location => (
                     <option key={location} value={location}>{location}</option>
                   ))}
@@ -198,12 +288,15 @@ function Business() {
               </div>
             </div>
 
-            <div className="mt-4 flex gap-3">
+            <div className="mt-6">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => loadBusinesses()}
-                className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 rounded-xl font-bold shadow-lg transition-all"
+                onClick={() => {
+                  setShowFilters(false)
+                  loadBusinesses()
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg transition-all"
               >
                 Apply Filters
               </motion.button>

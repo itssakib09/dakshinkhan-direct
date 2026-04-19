@@ -1,3 +1,4 @@
+// Home.jsx
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -16,8 +17,7 @@ import {
 import { useAppLocation } from '../context/LocationContext'
 import { useEffect, useState } from 'react'
 import { getFeaturedBusinesses, getFeaturedServices } from '../services/homeService'
-
-const USE_API = import.meta.env.VITE_USE_API === 'true'
+import { USE_API } from '../config'
 
 function Home() {
   const navigate = useNavigate()
@@ -25,51 +25,8 @@ function Home() {
   const [displayLocation, setDisplayLocation] = useState('Select Your Area')
   const [loading, setLoading] = useState(false)
   
-  const [featuredBusinesses, setFeaturedBusinesses] = useState([
-    {
-      id: 1,
-      name: 'Golden Spoon Restaurant',
-      category: 'Traditional & Modern Cuisine',
-      image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=400&fit=crop',
-      rating: 4.8,
-      distance: '2.5 km',
-      status: 'Open Now',
-      reviews: 234
-    },
-    {
-      id: 2,
-      name: 'Fashion Hub Store',
-      category: 'Clothing & Accessories',
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop',
-      rating: 4.6,
-      distance: '1.8 km',
-      status: 'Open Now',
-      reviews: 189
-    }
-  ])
-
-  const [featuredServices, setFeaturedServices] = useState([
-    {
-      id: 1,
-      name: 'Expert Plumbing Solutions',
-      category: 'Residential & Commercial',
-      image: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=800&h=400&fit=crop',
-      rating: 4.9,
-      distance: '1.2 km',
-      status: 'Available',
-      reviews: 156
-    },
-    {
-      id: 2,
-      name: 'Quick Home Repairs',
-      category: 'All Types of Repairs',
-      image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=400&fit=crop',
-      rating: 4.7,
-      distance: '3.1 km',
-      status: 'Available',
-      reviews: 98
-    }
-  ])
+  const [featuredBusinesses, setFeaturedBusinesses] = useState([])
+  const [featuredServices, setFeaturedServices] = useState([])
 
   useEffect(() => {
     if (selectedLocation) {
@@ -156,7 +113,7 @@ function Home() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto">
                   <HiShoppingBag className="text-white" size={24} />
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">1,200+</p>
+                <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">100+</p>
                 <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Businesses</p>
               </div>
 
@@ -164,7 +121,7 @@ function Home() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto">
                   <HiUsers className="text-white" size={24} />
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">50,000+</p>
+                <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">1,000+</p>
                 <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Active Users</p>
               </div>
             </div>
@@ -212,17 +169,17 @@ function Home() {
               <h3 className="text-lg sm:text-xl font-black text-gray-800 dark:text-white">Featured Businesses</h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Top rated in your area</p>
             </div>
-            <button className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-bold flex items-center gap-1 flex-shrink-0">
+            <Link to="/business" className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-bold flex items-center gap-1 flex-shrink-0">
               View All
               <HiArrowRight size={14} />
-            </button>
+            </Link>
           </div>
           
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : (
+          ) : featuredBusinesses.length > 0 ? (
             <div className="w-full overflow-hidden">
               <Swiper
                 modules={[Autoplay, Pagination]}
@@ -273,6 +230,21 @@ function Home() {
                 ))}
               </Swiper>
             </div>
+          ) : (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+              <HiShoppingBag size={48} className="text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                No Featured Businesses Yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Check back soon for featured businesses in your area
+              </p>
+              <Link to="/business">
+                <button className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all">
+                  Browse All Businesses
+                </button>
+              </Link>
+            </div>
           )}
         </motion.div>
 
@@ -288,17 +260,17 @@ function Home() {
               <h3 className="text-lg sm:text-xl font-black text-gray-800 dark:text-white">Featured Services</h3>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Trusted service providers</p>
             </div>
-            <button className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-bold flex items-center gap-1 flex-shrink-0">
+            <Link to="/services" className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-bold flex items-center gap-1 flex-shrink-0">
               View All
               <HiArrowRight size={14} />
-            </button>
+            </Link>
           </div>
           
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : (
+          ) : featuredServices.length > 0 ? (
             <div className="w-full overflow-hidden">
               <Swiper
                 modules={[Autoplay, Pagination]}
@@ -349,6 +321,21 @@ function Home() {
                 ))}
               </Swiper>
             </div>
+          ) : (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+              <HiUsers size={48} className="text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                No Featured Services Yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Check back soon for featured service providers
+              </p>
+              <Link to="/services">
+                <button className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all">
+                  Browse All Services
+                </button>
+              </Link>
+            </div>
           )}
         </motion.div>
 
@@ -372,7 +359,7 @@ function Home() {
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {businessCategories.map((category) => (
-              <Link key={category.id} to={`/business/${category.id}`}>
+              <Link key={category.id} to={`/business?category=${category.id}`}>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center space-y-2 shadow-lg border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto text-2xl">
                     {category.icon}
@@ -404,7 +391,7 @@ function Home() {
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {serviceCategories.map((category) => (
-              <Link key={category.id} to={`/services/${category.id}`}>
+              <Link key={category.id} to={`/services?category=${category.id}`}>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center space-y-2 shadow-lg border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto text-2xl">
                     {category.icon}

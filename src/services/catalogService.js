@@ -1,8 +1,7 @@
+// catalogService.js
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
-
-const USE_API = import.meta.env.VITE_USE_API === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+import { USE_API, API_URL } from '../config'
 
 /**
  * Get all categories from catalog

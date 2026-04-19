@@ -14,6 +14,7 @@ function Header({ onMenuClick }) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
+  const userRole = userProfile?.role || 'customer'
 
   async function handleLogout() {
     try {
@@ -76,7 +77,7 @@ function Header({ onMenuClick }) {
           </div>
 
           {/* Center - Search Bar (Desktop only) */}
-          <div className="hidden lg:flex flex-1 max-w-2xl mx-4">
+          <div className={`hidden ${userRole === 'customer' ? 'lg:hidden' : 'lg:flex'} flex-1 max-w-2xl mx-4`}>
             <form onSubmit={handleSearch} className="w-full">
               <div className={`relative flex items-center transition-all duration-300 ${
                 searchFocused 
@@ -115,7 +116,7 @@ function Header({ onMenuClick }) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/search')}
-              className="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors shadow-md"
+              className={`${userRole === 'customer' ? 'hidden' : 'lg:hidden'} w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors shadow-md`}
             >
               <HiSearch size={18} className="text-gray-700 dark:text-gray-300" />
             </motion.button>
@@ -149,7 +150,7 @@ function Header({ onMenuClick }) {
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
-                  className="p-2 md:p-2.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors duration-300 group"
+                  className="hidden md:flex p-2 md:p-2.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors duration-300 group"
                   title="Logout"
                 >
                   <HiLogout size={18} className="text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform" />

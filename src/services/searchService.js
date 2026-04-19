@@ -1,8 +1,7 @@
-import { collection, getDocs, query, where } from 'firebase/firestore'
+// searchService.js
+import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
-
-const USE_API = import.meta.env.VITE_USE_API === 'false'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+import { USE_API, API_URL } from '../config'
 
 /**
  * Search across all collections (businesses, services, stores)
@@ -25,22 +24,39 @@ async function searchAllFirebase(searchQuery, location) {
   const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0)
   const results = []
 
-  const collections = ['businesses', 'services', 'stores']
-  
-  for (const collectionName of collections) {
-    const collectionRef = collection(db, collectionName)
-    let q = collectionRef
-
-    if (location && location !== 'ALL') {
-      q = query(collectionRef, where('location', '==', location))
-    }
-
-    const snapshot = await getDocs(q)
+  try {
+    const usersRef = collection(db, 'users')
     
-    snapshot.forEach(doc => {
+    // Parallel queries for businesses and services
+    const [businessSnapshot, serviceSnapshot] = await Promise.all([
+      getDocs(query(
+        usersRef,
+        where('role', '==', 'business'),
+        where('onboardingComplete', '==', true)
+      )),
+      getDocs(query(
+        usersRef,
+        where('role', '==', 'service'),
+        where('onboardingComplete', '==', true)
+      ))
+    ])
+
+    // Process business users
+    businessSnapshot.forEach(doc => {
       const data = doc.data()
-      const searchableText = `${data.name || ''} ${data.title || ''} ${data.description || ''} ${data.category || ''} ${data.tags?.join(' ') || ''}`.toLowerCase()
       
+      // Apply location filter
+      if (location && location !== 'ALL') {
+        const serviceAreas = data.storeSettings?.serviceAreas || []
+        if (!serviceAreas.includes(location)) return
+      }
+
+      // Build searchable text
+      const storeName = data.storeSettings?.storeName?.toLowerCase() || ''
+      const businessType = data.storeSettings?.businessType?.toLowerCase() || ''
+      const searchableText = `${storeName} ${businessType}`
+      
+      // Calculate match score
       const matchScore = searchTerms.reduce((score, term) => {
         return score + (searchableText.includes(term) ? 1 : 0)
       }, 0)
@@ -48,16 +64,52 @@ async function searchAllFirebase(searchQuery, location) {
       if (matchScore > 0) {
         results.push({
           id: doc.id,
-          type: collectionName.slice(0, -1),
+          type: 'business',
           ...data,
           matchScore
         })
       }
     })
-  }
 
-  results.sort((a, b) => b.matchScore - a.matchScore)
-  return results
+    // Process service users
+    serviceSnapshot.forEach(doc => {
+      const data = doc.data()
+      
+      // Apply location filter
+      if (location && location !== 'ALL') {
+        const coverageAreas = data.serviceProfile?.coverageAreas || []
+        if (!coverageAreas.includes(location)) return
+      }
+
+      // Build searchable text
+      const displayName = data.displayName?.toLowerCase() || ''
+      const profession = data.serviceProfile?.profession?.toLowerCase() || ''
+      const services = data.serviceProfile?.servicesOffered?.join(' ').toLowerCase() || ''
+      const searchableText = `${displayName} ${profession} ${services}`
+      
+      // Calculate match score
+      const matchScore = searchTerms.reduce((score, term) => {
+        return score + (searchableText.includes(term) ? 1 : 0)
+      }, 0)
+
+      if (matchScore > 0) {
+        results.push({
+          id: doc.id,
+          type: 'service',
+          ...data,
+          matchScore
+        })
+      }
+    })
+
+    // Sort by match score descending
+    results.sort((a, b) => b.matchScore - a.matchScore)
+    return results
+
+  } catch (error) {
+    console.error('Error searching Firebase:', error)
+    throw error
+  }
 }
 
 /**
@@ -71,7 +123,7 @@ async function searchAllAPI(searchQuery, location) {
     location: location || 'ALL'
   })
 
-  const response = await fetch(`${API_BASE_URL}/search?${params}`, {
+  const response = await fetch(`${API_URL}/search?${params}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

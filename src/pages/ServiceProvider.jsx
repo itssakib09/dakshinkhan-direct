@@ -55,7 +55,7 @@ function ServiceProvider() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
           <div className="animate-pulse space-y-6">
             <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
@@ -69,7 +69,7 @@ function ServiceProvider() {
 
   if (error || !provider) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -106,7 +106,7 @@ function ServiceProvider() {
     : serviceProfile.coverageAreas?.join(', ') || 'Dakshinkhan'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
         {/* Back Button */}
         <motion.button
