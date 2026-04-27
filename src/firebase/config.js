@@ -1,3 +1,4 @@
+// config.js
 import { initializeApp } from "firebase/app"
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 import { getFirestore, initializeFirestore, persistentLocalCache } from "firebase/firestore"
@@ -15,20 +16,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 
-// Auth
 export const auth = getAuth(app)
 
-// Firestore with custom database name + new persistence (no warnings)
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({})
 }, 'dakshinkhan-direct')
 
-// Storage with custom bucket
 export const storage = getStorage(app, 'gs://dakshinkhan-direct.firebasestorage.app')
 
-// Set auth persistence
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error('Auth persistence error:', err)
 })
+
+export const USE_API = import.meta.env.VITE_USE_API === 'true'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export default app

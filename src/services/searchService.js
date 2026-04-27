@@ -3,12 +3,6 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { USE_API, API_URL } from '../config'
 
-/**
- * Search across all collections (businesses, services, stores)
- * @param {string} searchQuery - Search keywords
- * @param {string} location - Selected location or 'ALL'
- * @returns {Promise<Array>} Array of search results with type and matchScore
- */
 export async function searchAll(searchQuery, location) {
   if (USE_API) {
     return searchAllAPI(searchQuery, location)
@@ -17,17 +11,18 @@ export async function searchAll(searchQuery, location) {
   }
 }
 
-/**
- * Firebase implementation
- */
 async function searchAllFirebase(searchQuery, location) {
-  const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0)
+  const searchTerms = searchQuery.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0)
+  
+  if (searchTerms.length === 0) {
+    return []
+  }
+
   const results = []
 
   try {
     const usersRef = collection(db, 'users')
     
-    // Parallel queries for businesses and services
     const [businessSnapshot, serviceSnapshot] = await Promise.all([
       getDocs(query(
         usersRef,
@@ -41,68 +36,75 @@ async function searchAllFirebase(searchQuery, location) {
       ))
     ])
 
-    // Process business users
     businessSnapshot.forEach(doc => {
       const data = doc.data()
       
-      // Apply location filter
-      if (location && location !== 'ALL') {
-        const serviceAreas = data.storeSettings?.serviceAreas || []
-        if (!serviceAreas.includes(location)) return
-      }
-
-      // Build searchable text
-      const storeName = data.storeSettings?.storeName?.toLowerCase() || ''
-      const businessType = data.storeSettings?.businessType?.toLowerCase() || ''
-      const searchableText = `${storeName} ${businessType}`
+      const text = [
+        data.storeSettings?.storeName,
+        data.storeSettings?.businessType,
+        data.storeSettings?.serviceAreas?.join(' ')
+      ].filter(Boolean).join(' ').toLowerCase()
       
-      // Calculate match score
+      if (location && location !== 'ALL Areas' && location !== 'ALL') {
+        const areas = data.storeSettings?.serviceAreas || []
+        if (!areas.includes(location)) return
+      }
+      
       const matchScore = searchTerms.reduce((score, term) => {
-        return score + (searchableText.includes(term) ? 1 : 0)
+        return score + (text.includes(term) ? 1 : 0)
       }, 0)
-
-      if (matchScore > 0) {
+      
+      if (matchScore > 0 && data.storeSettings?.storeActive === true) {
         results.push({
           id: doc.id,
           type: 'business',
-          ...data,
-          matchScore
+          displayName: data.storeSettings?.storeName || data.displayName,
+          category: data.storeSettings?.businessType || '',
+          location: data.storeSettings?.serviceAreas?.[0] || '',
+          photoURL: data.photoURL || '',
+          storeActive: data.storeSettings?.storeActive,
+          openingHours: data.storeSettings?.openingHours,
+          matchScore,
+          ...data
         })
       }
     })
 
-    // Process service users
     serviceSnapshot.forEach(doc => {
       const data = doc.data()
       
-      // Apply location filter
-      if (location && location !== 'ALL') {
-        const coverageAreas = data.serviceProfile?.coverageAreas || []
-        if (!coverageAreas.includes(location)) return
-      }
-
-      // Build searchable text
-      const displayName = data.displayName?.toLowerCase() || ''
-      const profession = data.serviceProfile?.profession?.toLowerCase() || ''
-      const services = data.serviceProfile?.servicesOffered?.join(' ').toLowerCase() || ''
-      const searchableText = `${displayName} ${profession} ${services}`
+      const text = [
+        data.displayName,
+        data.serviceProfile?.profession,
+        data.serviceProfile?.servicesOffered?.join(' '),
+        data.serviceProfile?.coverageAreas?.join(' ')
+      ].filter(Boolean).join(' ').toLowerCase()
       
-      // Calculate match score
+      const areas = data.serviceProfile?.coverageAreas || []
+      if (location && location !== 'ALL Areas' && location !== 'ALL') {
+        if (!areas.includes('ALL') && !areas.includes(location)) return
+      }
+      
       const matchScore = searchTerms.reduce((score, term) => {
-        return score + (searchableText.includes(term) ? 1 : 0)
+        return score + (text.includes(term) ? 1 : 0)
       }, 0)
-
-      if (matchScore > 0) {
+      
+      if (matchScore > 0 && (data.serviceProfile?.servicesOffered?.length || 0) > 0) {
         results.push({
           id: doc.id,
           type: 'service',
-          ...data,
-          matchScore
+          displayName: data.displayName || '',
+          category: data.serviceProfile?.profession || '',
+          location: data.serviceProfile?.coverageAreas?.[0] || '',
+          photoURL: data.serviceProfile?.profilePhoto || data.photoURL || '',
+          servicesOffered: data.serviceProfile?.servicesOffered || [],
+          availableNow: data.serviceProfile?.availability?.availableNow || false,
+          matchScore,
+          ...data
         })
       }
     })
 
-    // Sort by match score descending
     results.sort((a, b) => b.matchScore - a.matchScore)
     return results
 
@@ -112,11 +114,8 @@ async function searchAllFirebase(searchQuery, location) {
   }
 }
 
-/**
- * REST API implementation
- */
 async function searchAllAPI(searchQuery, location) {
-  const token = localStorage.getItem('authToken')
+  const token = localStorage.getItem('token')
   
   const params = new URLSearchParams({
     q: searchQuery,

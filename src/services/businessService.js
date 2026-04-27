@@ -80,7 +80,9 @@ export async function getBusinesses(filters = {}) {
     // Filter 2: Category filter
     if (category) {
       businesses = businesses.filter(business => {
-        return business.storeSettings?.businessType === category
+        const businessType = business.storeSettings?.businessType || ''
+        const businessCategory = business.storeSettings?.businessCategory || ''
+        return businessType === category || businessCategory === category
       })
     }
 

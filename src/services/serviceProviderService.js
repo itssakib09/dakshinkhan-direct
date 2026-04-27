@@ -83,7 +83,11 @@ export async function getServiceProviders(filters = {}) {
     if (category) {
       providers = providers.filter(provider => {
         const services = provider.serviceProfile?.servicesOffered || []
-        return services.includes(category)
+        const serviceCategory = provider.serviceProfile?.serviceCategory || ''
+        const subcategory = provider.serviceProfile?.subcategory || ''
+        return services.includes(category) || 
+               serviceCategory === category || 
+               subcategory === category
       })
     }
 

@@ -12,12 +12,15 @@ import {
   HiStar, 
   HiClock, 
   HiArrowRight,
-  HiSparkles
+  HiSparkles,
+  HiBriefcase
 } from 'react-icons/hi'
 import { useAppLocation } from '../context/LocationContext'
 import { useEffect, useState } from 'react'
 import { getFeaturedBusinesses, getFeaturedServices } from '../services/homeService'
 import { USE_API } from '../config'
+import { BUSINESS_TYPES } from '../data/businessTypes'
+import { SERVICE_CATEGORIES } from '../data/serviceTypes'
 
 function Home() {
   const navigate = useNavigate()
@@ -56,20 +59,6 @@ function Home() {
       fetchFeaturedData()
     }
   }, [])
-  
-  const businessCategories = [
-    { id: 'food', name: 'Food', icon: '🍽️' },
-    { id: 'shopping', name: 'Shopping', icon: '🛍️' },
-    { id: 'salon', name: 'Salon', icon: '✂️' },
-    { id: 'health', name: 'Health', icon: '❤️' },
-  ]
-
-  const serviceCategories = [
-    { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
-    { id: 'electrical', name: 'Electrical', icon: '⚡' },
-    { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-    { id: 'repair', name: 'Repair', icon: '🛠️' },
-  ]
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
@@ -358,13 +347,13 @@ function Home() {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {businessCategories.map((category) => (
-              <Link key={category.id} to={`/business?category=${category.id}`}>
+            {BUSINESS_TYPES.slice(0, 8).map((category) => (
+              <Link key={category.id} to={`/business?main=${category.id}`}>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center space-y-2 shadow-lg border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto text-2xl">
-                    {category.icon}
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto">
+                    <HiShoppingBag className="text-white" size={20} />
                   </div>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{category.name}</p>
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{category.label}</p>
                 </div>
               </Link>
             ))}
@@ -390,13 +379,13 @@ function Home() {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {serviceCategories.map((category) => (
-              <Link key={category.id} to={`/services?category=${category.id}`}>
+            {SERVICE_CATEGORIES.slice(0, 8).map((category) => (
+              <Link key={category.id} to={`/services?main=${category.id}`}>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center space-y-2 shadow-lg border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto text-2xl">
-                    {category.icon}
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mx-auto">
+                    <HiBriefcase className="text-white" size={20} />
                   </div>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{category.name}</p>
+                  <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{category.label}</p>
                 </div>
               </Link>
             ))}

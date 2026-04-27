@@ -1,3 +1,4 @@
+// Search.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -117,7 +118,7 @@ function Search() {
           className="mb-6"
         >
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            {['all', 'business', 'service', 'store'].map((type) => (
+            {['all', 'business', 'service'].map((type) => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
@@ -127,7 +128,7 @@ function Search() {
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type === 'all' ? 'All' : type === 'business' ? 'Businesses' : 'Services'}
                 {type === 'all' && searchResults.length > 0 && ` (${searchResults.length})`}
               </button>
             ))}
@@ -151,13 +152,19 @@ function Search() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                onClick={() => navigate(`/store/${result.id}`)}
+                onClick={() => {
+                  if (result.type === 'business') {
+                    navigate(`/store/${result.id}`)
+                  } else if (result.type === 'service') {
+                    navigate(`/service-provider/${result.id}`)
+                  }
+                }}
                 className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all cursor-pointer border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                      {result.name || result.title}
+                      {result.displayName || 'Unknown'}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {result.category}
@@ -172,12 +179,23 @@ function Search() {
                     {result.description}
                   </p>
                 )}
-                {result.location && (
-                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <HiLocationMarker size={14} className="mr-1" />
-                    {result.location}
-                  </div>
-                )}
+                <div className="flex items-center justify-between mt-2">
+                  {result.location && (
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 gap-1">
+                      <HiLocationMarker size={14} />
+                      <span>{result.location}</span>
+                    </div>
+                  )}
+                  {result.type === 'service' && (
+                    <span className={`text-xs font-bold ${
+                      result.availableNow
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {result.availableNow ? 'Available' : 'Busy'}
+                    </span>
+                  )}
+                </div>
               </motion.div>
             ))}
           </motion.div>

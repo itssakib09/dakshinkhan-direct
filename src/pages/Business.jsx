@@ -1,18 +1,63 @@
+// src/pages/Business.jsx
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker, HiStar, HiClock, HiViewGrid, HiArrowLeft } from 'react-icons/hi'
+import {
+  HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker,
+  HiStar, HiClock, HiViewGrid, HiArrowLeft, HiHeart,
+  HiLightningBolt, HiPhone, HiCog, HiHome, HiSparkles,
+  HiEye, HiDocumentText, HiUsers, HiRefresh
+} from 'react-icons/hi'
 import { getBusinesses, isBusinessOpen } from '../services/businessService'
 import { useAppLocation } from '../context/LocationContext'
 import { BUSINESS_TYPES } from '../data/businessTypes'
 import { LOCATIONS, ALL_AREAS_LABEL } from '../data/locations'
 
+const CATEGORY_CONFIG = {
+  'Grocery Store':    { color: 'from-green-500 to-green-700',     icon: HiShoppingBag },
+  'Supermarket':      { color: 'from-green-600 to-green-800',     icon: HiShoppingBag },
+  'Restaurant':       { color: 'from-orange-500 to-orange-700',   icon: HiHeart },
+  'Fast Food':        { color: 'from-red-500 to-red-700',         icon: HiLightningBolt },
+  'Cafe':             { color: 'from-yellow-600 to-yellow-800',   icon: HiStar },
+  'Pharmacy':         { color: 'from-blue-500 to-blue-700',       icon: HiHeart },
+  'Medicine Shop':    { color: 'from-blue-600 to-blue-800',       icon: HiHeart },
+  'Electronics Shop': { color: 'from-purple-500 to-purple-700',   icon: HiShoppingBag },
+  'Mobile Shop':      { color: 'from-purple-600 to-purple-800',   icon: HiPhone },
+  'Clothing Store':   { color: 'from-pink-500 to-pink-700',       icon: HiUsers },
+  'Fashion Boutique': { color: 'from-pink-600 to-pink-800',       icon: HiSparkles },
+  'Hardware Store':   { color: 'from-gray-600 to-gray-800',       icon: HiCog },
+  'Furniture Shop':   { color: 'from-amber-600 to-amber-800',     icon: HiHome },
+  'Book Store':       { color: 'from-indigo-500 to-indigo-700',   icon: HiDocumentText },
+  'Stationery Shop':  { color: 'from-indigo-400 to-indigo-600',   icon: HiDocumentText },
+  'Bakery':           { color: 'from-yellow-500 to-yellow-700',   icon: HiStar },
+  'Sweet Shop':       { color: 'from-pink-400 to-pink-600',       icon: HiHeart },
+  'Meat Shop':        { color: 'from-red-600 to-red-800',         icon: HiShoppingBag },
+  'Fish Market':      { color: 'from-blue-400 to-blue-600',       icon: HiLocationMarker },
+  'Vegetable Store':  { color: 'from-green-400 to-green-600',     icon: HiHome },
+  'Salon':            { color: 'from-teal-500 to-teal-700',       icon: HiSparkles },
+  'Barber Shop':      { color: 'from-teal-400 to-teal-600',       icon: HiSparkles },
+  'Beauty Parlor':    { color: 'from-rose-500 to-rose-700',       icon: HiStar },
+  'Laundry Service':  { color: 'from-cyan-500 to-cyan-700',       icon: HiRefresh },
+  'Printing Press':   { color: 'from-gray-500 to-gray-700',       icon: HiDocumentText },
+  'Gift Shop':        { color: 'from-rose-400 to-rose-600',       icon: HiHeart },
+  'Toy Store':        { color: 'from-yellow-400 to-yellow-600',   icon: HiStar },
+  'Sports Shop':      { color: 'from-green-500 to-green-700',     icon: HiLightningBolt },
+  'Jewellery Shop':   { color: 'from-amber-400 to-amber-600',     icon: HiStar },
+  'Optical Store':    { color: 'from-blue-400 to-blue-600',       icon: HiEye },
+  'Pet Shop':         { color: 'from-orange-400 to-orange-600',   icon: HiHeart },
+  'Plant Nursery':    { color: 'from-green-400 to-green-600',     icon: HiHome },
+  'General Store':    { color: 'from-primary-500 to-primary-700', icon: HiShoppingBag },
+  'Other':            { color: 'from-gray-400 to-gray-600',       icon: HiShoppingBag },
+}
+
 function Business() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { selectedLocation } = useAppLocation()
   const [searchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
-  
+  const mainParam = searchParams.get('main')
+
   const [businesses, setBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -24,12 +69,30 @@ function Business() {
   const [lastDoc, setLastDoc] = useState(null)
   const [loadingMore, setLoadingMore] = useState(false)
   const [showCategories, setShowCategories] = useState(!categoryParam)
+  const [showSubcategories, setShowSubcategories] = useState(false)
+  const [selectedMainCategory, setSelectedMainCategory] = useState(null)
 
   useEffect(() => {
     if (categoryParam) {
       setSelectedCategory(categoryParam)
+      setShowCategories(false)
+      setShowSubcategories(false)
+
+      // Find parent main category so back button works
+      const parent = BUSINESS_TYPES.find(c =>
+        c.subcategories.includes(categoryParam)
+      )
+      if (parent) setSelectedMainCategory(parent)
+
+    } else if (mainParam) {
+      const found = BUSINESS_TYPES.find(c => c.id === mainParam)
+      if (found) {
+        setSelectedMainCategory(found)
+        setShowCategories(false)
+        setShowSubcategories(true)
+      }
     }
-  }, [categoryParam])
+  }, [categoryParam, mainParam])
 
   useEffect(() => {
     if (!showCategories) {
@@ -41,10 +104,22 @@ function Business() {
     setSelectedLocationFilter(selectedLocation)
   }, [selectedLocation])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const hasCategory = params.get('category')
+    const hasMain = params.get('main')
+    if (!hasCategory && !hasMain) {
+      setShowCategories(true)
+      setShowSubcategories(false)
+      setSelectedMainCategory(null)
+      setSelectedCategory('')
+    }
+  }, [location.state?.ts, location.pathname])
+
   const loadBusinesses = async (loadMore = false) => {
     try {
       setError(null)
-      
+
       if (loadMore) {
         setLoadingMore(true)
       } else {
@@ -61,13 +136,13 @@ function Business() {
       }
 
       const result = await getBusinesses(filters)
-      
+
       if (loadMore) {
         setBusinesses(prev => [...prev, ...result.businesses])
       } else {
         setBusinesses(result.businesses)
       }
-      
+
       setLastDoc(result.lastDoc)
       setHasMore(result.hasMore)
     } catch (error) {
@@ -95,19 +170,27 @@ function Business() {
     navigate(`/store/${businessId}`)
   }
 
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category)
+  const handleMainCategorySelect = (category) => {
+    setSelectedMainCategory(category)
+    setShowSubcategories(true)
     setShowCategories(false)
   }
 
-  const handleBackToCategories = () => {
-    setSelectedCategory('')
-    setShowCategories(true)
+  const handleSubcategorySelect = (subcategory) => {
+    setSelectedCategory(subcategory)
+    setShowSubcategories(false)
   }
 
-  const getBusinessRating = (business) => {
-    // Placeholder - implement when reviews are added
-    return 0
+  const handleBackToCategories = () => {
+    setShowSubcategories(false)
+    setShowCategories(true)
+    setSelectedMainCategory(null)
+    setSelectedCategory('')
+  }
+
+  const handleBackToSubcategories = () => {
+    setShowSubcategories(true)
+    setShowCategories(false)
   }
 
   if (showCategories) {
@@ -140,26 +223,88 @@ function Business() {
             All Businesses
           </motion.button>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {BUSINESS_TYPES.map((category, index) => (
-              <motion.button
-                key={category}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                whileHover={{ y: -4, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleCategorySelect(category)}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
-              >
-                <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <HiShoppingBag size={24} className="text-white" />
-                </div>
-                <p className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2">
-                  {category}
-                </p>
-              </motion.button>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {BUSINESS_TYPES.map((category, index) => {
+              const config = CATEGORY_CONFIG[category.label] || CATEGORY_CONFIG['Other']
+              const IconComponent = config.icon
+              return (
+                <motion.button
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleMainCategorySelect(category)}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-3 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
+                >
+                  <div className={`w-11 h-11 bg-gradient-to-br ${config.color} rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md group-hover:scale-110 transition-transform`}>
+                    <IconComponent size={22} className="text-white" />
+                  </div>
+                  <p className="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-tight">
+                    {category.label}
+                  </p>
+                </motion.button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // STEP 2: Subcategory grid
+  if (showSubcategories && selectedMainCategory) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={handleBackToCategories}
+            className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-4 hover:gap-3 transition-all"
+          >
+            <HiArrowLeft size={18} />
+            All Categories
+          </motion.button>
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+              {selectedMainCategory.label}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Choose a subcategory
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {selectedMainCategory.subcategories.map((subcategory, index) => {
+              const config = CATEGORY_CONFIG[subcategory] || CATEGORY_CONFIG['Other']
+              const IconComponent = config.icon
+              return (
+                <motion.button
+                  key={subcategory}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.02 }}
+                  whileHover={{ y: -2, scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSubcategorySelect(subcategory)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
+                >
+                  <div className={`w-10 h-10 bg-gradient-to-br ${config.color} rounded-lg flex items-center justify-center mx-auto mb-2 shadow-md group-hover:scale-105 transition-transform`}>
+                    <IconComponent size={18} className="text-white" />
+                  </div>
+                  <p className="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-tight">
+                    {subcategory}
+                  </p>
+                </motion.button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -167,7 +312,7 @@ function Business() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 ">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
         <motion.div
@@ -179,12 +324,11 @@ function Business() {
             <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              whileHover={{ x: -4 }}
-              onClick={handleBackToCategories}
-              className="mb-4 flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors"
+              onClick={handleBackToSubcategories}
+              className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-4 hover:gap-3 transition-all"
             >
-              <HiArrowLeft size={20} />
-              All Categories
+              <HiArrowLeft size={18} />
+              Sub Categories
             </motion.button>
           )}
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2">
@@ -264,8 +408,12 @@ function Business() {
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
                 >
                   <option value="">All Categories</option>
-                  {BUSINESS_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                  {BUSINESS_TYPES.map(cat => (
+                    <optgroup key={cat.id} label={cat.label}>
+                      {cat.subcategories.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -312,26 +460,26 @@ function Business() {
             className="mb-6 flex flex-wrap gap-2"
           >
             {searchTerm && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-xl text-sm font-semibold">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
                 Search: {searchTerm}
                 <button onClick={() => setSearchTerm('')}>
-                  <HiX size={16} />
+                  <HiX size={14} />
                 </button>
               </span>
             )}
             {selectedCategory && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-xl text-sm font-semibold">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
                 {selectedCategory}
                 <button onClick={() => setSelectedCategory('')}>
-                  <HiX size={16} />
+                  <HiX size={14} />
                 </button>
               </span>
             )}
             {selectedLocationFilter !== 'ALL Areas' && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-xl text-sm font-semibold">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
                 {selectedLocationFilter}
                 <button onClick={() => setSelectedLocationFilter('ALL Areas')}>
-                  <HiX size={16} />
+                  <HiX size={14} />
                 </button>
               </span>
             )}
@@ -342,10 +490,12 @@ function Business() {
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 animate-pulse">
-                <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-xl mb-4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden animate-pulse">
+                <div className="w-full h-40 bg-gray-200 dark:bg-gray-700"></div>
+                <div className="p-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                </div>
               </div>
             ))}
           </div>
@@ -392,9 +542,8 @@ function Business() {
               {businesses.map((business, index) => {
                 const storeSettings = business.storeSettings || {}
                 const isOpen = isBusinessOpen(storeSettings.openingHours)
-                const rating = getBusinessRating(business)
-                const serviceArea = storeSettings.serviceAreas?.includes('ALL') 
-                  ? 'All Areas' 
+                const serviceArea = storeSettings.serviceAreas?.includes('ALL')
+                  ? 'All Areas'
                   : storeSettings.serviceAreas?.[0] || 'Dakshinkhan'
 
                 return (
@@ -405,57 +554,55 @@ function Business() {
                     transition={{ delay: index * 0.05 }}
                     whileHover={{ y: -4, scale: 1.02 }}
                     onClick={() => handleBusinessClick(business.id)}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden cursor-pointer group"
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden cursor-pointer group transition-shadow"
                   >
-                    {/* Business Logo/Image */}
-                    <div className="relative w-full h-32 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                    {/* Business Image / Placeholder */}
+                    <div className="relative w-full h-40">
                       {business.photoURL ? (
-                        <img 
-                          src={business.photoURL} 
+                        <img
+                          src={business.photoURL}
                           alt={storeSettings.storeName}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <HiShoppingBag size={40} className="text-white opacity-50" />
+                        <div className="w-full h-40 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                          <span className="text-5xl font-black text-white/40">
+                            {storeSettings.storeName?.[0]?.toUpperCase() || 'B'}
+                          </span>
+                        </div>
                       )}
-                      
+
                       {/* Open/Closed Badge */}
                       <div className="absolute top-2 right-2">
-                        <span className={`px-2 py-1 rounded-lg text-xs font-bold backdrop-blur-sm ${
-                          isOpen 
-                            ? 'bg-green-500/90 text-white' 
-                            : 'bg-gray-500/90 text-white'
+                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-lg ${
+                          isOpen
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-800/80 text-gray-300'
                         }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            isOpen ? 'bg-white animate-pulse' : 'bg-gray-400'
+                          }`}></span>
                           {isOpen ? 'Open' : 'Closed'}
                         </span>
                       </div>
                     </div>
 
                     {/* Business Info */}
-                    <div className="p-4">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    <div className="p-3">
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-0.5 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                         {storeSettings.storeName || 'Business'}
                       </h3>
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-1">
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-1">
                         {storeSettings.businessType || 'Store'}
                       </p>
 
-                      <div className="flex items-center gap-1 mb-2">
-                        <HiLocationMarker size={14} className="text-gray-400" />
+                      <div className="flex items-center gap-1">
+                        <HiLocationMarker size={13} className="text-gray-400 flex-shrink-0" />
                         <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
                           {serviceArea}
                         </span>
                       </div>
-
-                      {rating > 0 && (
-                        <div className="flex items-center gap-1">
-                          <HiStar size={14} className="text-yellow-500" />
-                          <span className="text-xs text-gray-600 dark:text-gray-400">
-                            {rating.toFixed(1)}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </motion.div>
                 )

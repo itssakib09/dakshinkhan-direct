@@ -199,7 +199,7 @@ function StoreSettingsSection() {
               >
                 <option value="">Select business type</option>
                 {BUSINESS_TYPES.map(type => (
-                  <option key={type} value={type}>{type}</option>
+                  <option key={type.id} value={type.id}>{type.label}</option>
                 ))}
               </select>
             </div>

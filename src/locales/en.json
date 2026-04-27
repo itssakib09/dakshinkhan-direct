@@ -1,0 +1,85 @@
+{
+  "hero": {
+    "tagline_bn": "Your neighborhood, directly",
+    "title": "Dakshinkhan Direct",
+    "subtitle": "Your neighborhood, connected",
+    "location": "Dakshinkhan",
+    "btn_businesses": "Businesses",
+    "btn_services": "Services"
+  },
+  "hero_slides": [
+    {
+      "headline": "Best Shops in Dakshinkhan",
+      "subline": "Discover local businesses near you",
+      "cta": "Browse Businesses"
+    },
+    {
+      "headline": "Find Trusted Professionals",
+      "subline": "Skilled service providers near you",
+      "cta": "Find Services"
+    },
+    {
+      "headline": "List Your Business Free",
+      "subline": "Join Dakshinkhan Direct today",
+      "cta": "Get Started"
+    }
+  ],
+  "search_cycle": [
+    "Find a nearby pharmacy...",
+    "Need a plumber?",
+    "Best restaurants nearby...",
+    "Electrician available?",
+    "Salon near you...",
+    "Looking for a tutor?"
+  ],
+  "header": {
+    "search_placeholder": "Search businesses or services...",
+    "location_label": "Select area"
+  },
+  "stats": {
+    "businesses": "Businesses",
+    "services": "Service Providers",
+    "loading": "Loading..."
+  },
+  "banner": {
+    "tap_to_view": "View Details",
+    "sponsored": "Ad"
+  },
+  "ad": {
+    "sponsored": "Sponsored",
+    "view_store": "View Store"
+  },
+  "sections": {
+    "businesses_title": "Local Businesses",
+    "services_title": "Local Services",
+    "featured_businesses": "Featured Businesses",
+    "featured_services": "Featured Services",
+    "see_all": "See All"
+  },
+  "categories": {
+    "food": "Food",
+    "grocery": "Grocery",
+    "pharmacy": "Pharmacy",
+    "salon": "Salon",
+    "plumbing": "Plumbing",
+    "electrical": "Electric",
+    "cleaning": "Cleaning",
+    "repair": "Repair"
+  },
+  "cards": {
+    "open": "Open",
+    "closed": "Closed",
+    "contact_now": "Contact Now",
+    "available": "Available",
+    "unavailable": "Unavailable"
+  },
+  "nav": {
+    "home": "Home",
+    "business": "Business",
+    "dashboard": "Dashboard",
+    "search": "Search",
+    "services": "Services",
+    "account": "Account"
+  },
+  "lang_toggle": "বাং"
+}

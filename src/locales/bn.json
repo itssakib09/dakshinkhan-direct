@@ -1,0 +1,85 @@
+{
+  "hero": {
+    "tagline_bn": "আপনার এলাকা, সরাসরি",
+    "title": "দক্ষিণখান ডাইরেক্ট",
+    "subtitle": "আপনার পাড়া, এখন সংযুক্ত",
+    "location": "দক্ষিণখান",
+    "btn_businesses": "ব্যবসা প্রতিষ্ঠান",
+    "btn_services": "সেবা সমূহ"
+  },
+  "hero_slides": [
+    {
+      "headline": "দক্ষিণখানের সেরা দোকান",
+      "subline": "Discover local businesses near you",
+      "cta": "দোকান দেখুন"
+    },
+    {
+      "headline": "বিশ্বস্ত কারিগর খুঁজুন",
+      "subline": "Find skilled service providers",
+      "cta": "সেবা খুঁজুন"
+    },
+    {
+      "headline": "আপনার ব্যবসা লিস্ট করুন",
+      "subline": "List your business for free today",
+      "cta": "শুরু করুন"
+    }
+  ],
+  "search_cycle": [
+    "কাছের ফার্মেসি খুঁজুন...",
+    "রাজমিস্ত্রি লাগবে?",
+    "ভালো রেস্তোরাঁ কোথায়?",
+    "ইলেকট্রিশিয়ান দরকার?",
+    "নিকটস্থ সেলুন খুঁজুন...",
+    "গৃহশিক্ষক পাওয়া যাবে?"
+  ],
+  "header": {
+    "search_placeholder": "ব্যবসা বা সেবা খুঁজুন...",
+    "location_label": "এলাকা বেছে নিন"
+  },
+  "stats": {
+    "businesses": "ব্যবসা প্রতিষ্ঠান",
+    "services": "দক্ষ সেবাদাতা",
+    "loading": "লোড হচ্ছে..."
+  },
+  "banner": {
+    "tap_to_view": "বিস্তারিত দেখুন",
+    "sponsored": "বিজ্ঞাপন"
+  },
+  "ad": {
+    "sponsored": "বিজ্ঞাপন",
+    "view_store": "দোকান দেখুন"
+  },
+  "sections": {
+    "businesses_title": "স্থানীয় ব্যবসা",
+    "services_title": "স্থানীয় সেবা",
+    "featured_businesses": "বিশেষ ব্যবসা প্রতিষ্ঠান",
+    "featured_services": "বিশেষ সেবাদাতা",
+    "see_all": "সব দেখুন"
+  },
+  "categories": {
+    "food": "খাবার",
+    "grocery": "মুদি",
+    "pharmacy": "ফার্মেসি",
+    "salon": "সেলুন",
+    "plumbing": "প্লাম্বিং",
+    "electrical": "ইলেকট্রিক",
+    "cleaning": "পরিষ্কার",
+    "repair": "মেরামত"
+  },
+  "cards": {
+    "open": "খোলা",
+    "closed": "বন্ধ",
+    "contact_now": "যোগাযোগ করুন",
+    "available": "পাওয়া যাচ্ছে",
+    "unavailable": "পাওয়া যাচ্ছে না"
+  },
+  "nav": {
+    "home": "হোম",
+    "business": "ব্যবসা",
+    "dashboard": "ড্যাশবোর্ড",
+    "search": "খোঁজুন",
+    "services": "সেবা",
+    "account": "অ্যাকাউন্ট"
+  },
+  "lang_toggle": "EN"
+}
