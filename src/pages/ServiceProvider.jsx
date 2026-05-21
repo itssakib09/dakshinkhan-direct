@@ -1,3 +1,4 @@
+// src/pages/ServiceProvider.jsx
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -108,15 +109,7 @@ function ServiceProvider() {
     ? 'All Areas in Dakshinkhan'
     : serviceProfile.coverageAreas?.join(', ') || 'Dakshinkhan'
 
-  const handleBack = () => {
-    const subcategory = provider?.serviceProfile?.subcategory 
-      || provider?.serviceProfile?.servicesOffered?.[0]
-    if (subcategory) {
-      navigate(`/services?category=${encodeURIComponent(subcategory)}`)
-    } else {
-      navigate('/services')
-    }
-  }
+  const handleBack = () => navigate(-1)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">

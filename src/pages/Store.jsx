@@ -1,3 +1,4 @@
+// src/pages/Store.jsx
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -148,14 +149,7 @@ function Store() {
   const isOpen = isBusinessOpen(storeSettings.openingHours)
   const serviceAreasDisplay = storeSettings.serviceAreas?.join(', ') || 'Dakshinkhan'
 
-  const handleBack = () => {
-    const businessType = business?.storeSettings?.businessType
-    if (businessType) {
-      navigate(`/business?category=${encodeURIComponent(businessType)}`)
-    } else {
-      navigate('/business')
-    }
-  }
+  const handleBack = () => navigate(-1)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">

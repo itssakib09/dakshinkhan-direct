@@ -1,4 +1,6 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { LocationProvider } from './context/LocationContext'
@@ -32,6 +34,14 @@ const Business = lazy(() => import('./pages/Business'))
 const Services = lazy(() => import('./pages/Services'))
 const ServiceProvider = lazy(() => import('./pages/ServiceProvider'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -179,6 +189,7 @@ function App() {
         <LocationProvider>
           <SearchProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <AnimatedRoutes />
             </BrowserRouter>
           </SearchProvider>

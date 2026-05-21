@@ -1,39 +1,25 @@
+// src/components/Header.jsx
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { HiBell, HiLogout, HiUser, HiSun, HiMoon, HiMenu, HiSearch } from 'react-icons/hi'
+import { motion } from 'framer-motion'
+import { HiBell, HiUser, HiMenu, HiLocationMarker } from 'react-icons/hi'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
 import { useAppLocation } from '../context/LocationContext'
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 function Header({ onMenuClick }) {
-  const { currentUser, userProfile, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { currentUser, userProfile } = useAuth()
   const { selectedLocation } = useAppLocation()
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchFocused, setSearchFocused] = useState(false)
-  const userRole = userProfile?.role || 'customer'
-
-  async function handleLogout() {
-    try {
-      await logout()
-      window.location.href = '/login'
-    } catch (error) {
-      console.error('Logout failed:', error)
-      alert('Failed to logout. Please try again.')
-    }
+  const { i18n, t } = useTranslation()
+  const currentLang = i18n.language?.startsWith('bn') ? 'bn' : 'en'
+  const toggleLang = () => {
+    const newLang = currentLang === 'bn' ? 'en' : 'bn'
+    i18n.changeLanguage(newLang)
+    localStorage.setItem('i18nextLng', newLang)
   }
 
-  function handleSearch(e) {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(selectedLocation || 'All Areas')}`)
-      setSearchQuery('')
-      setSearchFocused(false)
-    }
-  }
+  const firstInitial = (userProfile?.displayName || 'U')[0].toUpperCase()
 
   return (
     <motion.header
@@ -42,10 +28,9 @@ function Header({ onMenuClick }) {
       className="bg-white dark:bg-gray-900 backdrop-blur-xl shadow-lg sticky top-0 z-[100] border-b border-gray-200 dark:border-gray-800 transition-colors duration-300"
     >
       <div className="w-full max-w-full mx-auto px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex items-center justify-between gap-2 sm:gap-3">
-          {/* Left Side - Menu Button (Tablet only) + Logo */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Menu Button - Show ONLY on tablet (768px-1023px) - ALL PAGES */}
+        <div className="flex items-center gap-2 sm:gap-3">
+
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -55,7 +40,6 @@ function Header({ onMenuClick }) {
               <HiMenu size={20} className="text-gray-700 dark:text-gray-300" />
             </motion.button>
 
-            {/* Logo */}
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 5 }}
@@ -76,144 +60,29 @@ function Header({ onMenuClick }) {
             </Link>
           </div>
 
-          {/* Center - Search Bar (Desktop only) */}
-          <div className={`hidden ${userRole === 'customer' ? 'lg:hidden' : 'lg:flex'} flex-1 max-w-2xl mx-4`}>
-            <form onSubmit={handleSearch} className="w-full">
-              <div className={`relative flex items-center transition-all duration-300 ${
-                searchFocused 
-                  ? 'ring-2 ring-primary-500 dark:ring-primary-400' 
-                  : 'ring-1 ring-gray-200 dark:ring-gray-700'
-              } rounded-xl bg-gray-50 dark:bg-gray-800`}>
-                <HiSearch 
-                  size={20} 
-                  className="absolute left-3 text-gray-400 dark:text-gray-500"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  placeholder={`Search in ${selectedLocation || 'All Areas'}...`}
-                  className="w-full pl-10 pr-4 py-2.5 bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
-                />
-                {searchQuery && (
-                  <button
-                    type="submit"
-                    className="absolute right-2 px-3 py-1.5 text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                  >
-                    Search
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
+          <button
+            onClick={() => navigate('/locations')}
+            className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-2 rounded-xl transition-colors flex-1 max-w-[180px] mx-2 lg:mx-4"
+          >
+            <HiLocationMarker size={14} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
+              {selectedLocation || t('header.location_label')}
+            </span>
+          </button>
 
-          {/* Right Side */}
-          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-            {/* Mobile Search Button */}
+          <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/search')}
-              className={`${userRole === 'customer' ? 'hidden' : 'lg:hidden'} w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors shadow-md`}
+              onClick={toggleLang}
+              className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-300 shadow-md"
             >
-              <HiSearch size={18} className="text-gray-700 dark:text-gray-300" />
+              <span className="text-xs font-black text-gray-700 dark:text-gray-300">
+                {currentLang === 'bn' ? 'EN' : 'বাং'}
+              </span>
             </motion.button>
 
-            {/* Desktop Auth */}
-            {currentUser ? (
-              <div className="hidden md:flex items-center gap-2 md:gap-3">
-                <Link to="/dashboard">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700 hover:from-primary-100 hover:to-primary-200 dark:hover:from-gray-700 dark:hover:to-gray-600 rounded-xl transition-all duration-300 border border-primary-200/50 dark:border-gray-600"
-                  >
-                    {userProfile?.photoURL ? (
-                      <img 
-                        src={userProfile.photoURL} 
-                        alt={userProfile.displayName}
-                        className="w-7 h-7 md:w-8 md:h-8 rounded-full ring-2 ring-primary-400/30 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                        <HiUser size={16} className="text-white" />
-                      </div>
-                    )}
-                    <span className="text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[80px] md:max-w-[120px]">
-                      {userProfile?.displayName || 'Profile'}
-                    </span>
-                  </motion.div>
-                </Link>
-                <motion.button
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleLogout}
-                  className="hidden md:flex p-2 md:p-2.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-xl transition-colors duration-300 group"
-                  title="Logout"
-                >
-                  <HiLogout size={18} className="text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform" />
-                </motion.button>
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Link to="/login">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-gray-800 rounded-xl transition-all duration-300"
-                  >
-                    Login
-                  </motion.button>
-                </Link>
-                <Link to="/signup">
-                  <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: "0 10px 30px -10px rgba(34, 197, 94, 0.5)" }}
-                    whileTap={{ scale: 0.98 }}
-                    className="px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl shadow-lg shadow-primary-500/30 transition-all duration-300"
-                  >
-                    Sign Up
-                  </motion.button>
-                </Link>
-              </div>
-            )}
-
-            {/* Dark Mode Toggle */}
-            <div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleTheme}
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-300 shadow-md group"
-              >
-                <AnimatePresence mode="wait">
-                  {theme === 'dark' ? (
-                    <motion.div
-                      key="moon"
-                      initial={{ rotate: -90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <HiMoon size={18} className="text-primary-500 group-hover:scale-110 transition-transform" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="sun"
-                      initial={{ rotate: 90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <HiSun size={18} className="text-amber-500 group-hover:scale-110 transition-transform" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </div>
-
-            {/* Notification Bell */}
             <motion.button
               whileHover={{ scale: 1.05, rotate: 10 }}
               whileTap={{ scale: 0.95 }}
@@ -224,6 +93,39 @@ function Header({ onMenuClick }) {
                 3
               </span>
             </motion.button>
+
+            <div className="hidden lg:flex items-center gap-2">
+              {currentUser ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/dashboard')}
+                  className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary-200 dark:ring-primary-900 flex-shrink-0"
+                >
+                  {userProfile?.photoURL ? (
+                    <img
+                      src={userProfile.photoURL}
+                      alt={userProfile?.displayName || ''}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">{firstInitial}</span>
+                    </div>
+                  )}
+                </motion.button>
+              ) : (
+                <Link to="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-xl transition-colors shadow-md shadow-primary-600/20"
+                  >
+                    Sign Up
+                  </motion.button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -13,10 +13,11 @@ i18n
       bn: { translation: bn },
       en: { translation: en },
     },
-    lng: 'bn',
+    lng: undefined,
     fallbackLng: 'bn',
     detection: {
       order: ['localStorage', 'navigator'],
+      lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage'],
     },
     interpolation: {

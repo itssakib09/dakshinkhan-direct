@@ -1,53 +1,55 @@
 // src/pages/Business.jsx
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  HiSearch, HiFilter, HiX, HiShoppingBag, HiLocationMarker,
-  HiStar, HiClock, HiViewGrid, HiArrowLeft, HiHeart,
-  HiLightningBolt, HiPhone, HiCog, HiHome, HiSparkles,
-  HiEye, HiDocumentText, HiUsers, HiRefresh
+  HiSearch, HiX, HiShoppingBag, HiLocationMarker,
+  HiClock, HiArrowLeft, HiHeart, HiOutlineHeart,
+  HiOfficeBuilding, HiAdjustments, HiArrowRight
 } from 'react-icons/hi'
 import { getBusinesses, isBusinessOpen } from '../services/businessService'
 import { useAppLocation } from '../context/LocationContext'
 import { BUSINESS_TYPES } from '../data/businessTypes'
-import { LOCATIONS, ALL_AREAS_LABEL } from '../data/locations'
+import { LOCATIONS } from '../data/locations'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
 
-const CATEGORY_CONFIG = {
-  'Grocery Store':    { color: 'from-green-500 to-green-700',     icon: HiShoppingBag },
-  'Supermarket':      { color: 'from-green-600 to-green-800',     icon: HiShoppingBag },
-  'Restaurant':       { color: 'from-orange-500 to-orange-700',   icon: HiHeart },
-  'Fast Food':        { color: 'from-red-500 to-red-700',         icon: HiLightningBolt },
-  'Cafe':             { color: 'from-yellow-600 to-yellow-800',   icon: HiStar },
-  'Pharmacy':         { color: 'from-blue-500 to-blue-700',       icon: HiHeart },
-  'Medicine Shop':    { color: 'from-blue-600 to-blue-800',       icon: HiHeart },
-  'Electronics Shop': { color: 'from-purple-500 to-purple-700',   icon: HiShoppingBag },
-  'Mobile Shop':      { color: 'from-purple-600 to-purple-800',   icon: HiPhone },
-  'Clothing Store':   { color: 'from-pink-500 to-pink-700',       icon: HiUsers },
-  'Fashion Boutique': { color: 'from-pink-600 to-pink-800',       icon: HiSparkles },
-  'Hardware Store':   { color: 'from-gray-600 to-gray-800',       icon: HiCog },
-  'Furniture Shop':   { color: 'from-amber-600 to-amber-800',     icon: HiHome },
-  'Book Store':       { color: 'from-indigo-500 to-indigo-700',   icon: HiDocumentText },
-  'Stationery Shop':  { color: 'from-indigo-400 to-indigo-600',   icon: HiDocumentText },
-  'Bakery':           { color: 'from-yellow-500 to-yellow-700',   icon: HiStar },
-  'Sweet Shop':       { color: 'from-pink-400 to-pink-600',       icon: HiHeart },
-  'Meat Shop':        { color: 'from-red-600 to-red-800',         icon: HiShoppingBag },
-  'Fish Market':      { color: 'from-blue-400 to-blue-600',       icon: HiLocationMarker },
-  'Vegetable Store':  { color: 'from-green-400 to-green-600',     icon: HiHome },
-  'Salon':            { color: 'from-teal-500 to-teal-700',       icon: HiSparkles },
-  'Barber Shop':      { color: 'from-teal-400 to-teal-600',       icon: HiSparkles },
-  'Beauty Parlor':    { color: 'from-rose-500 to-rose-700',       icon: HiStar },
-  'Laundry Service':  { color: 'from-cyan-500 to-cyan-700',       icon: HiRefresh },
-  'Printing Press':   { color: 'from-gray-500 to-gray-700',       icon: HiDocumentText },
-  'Gift Shop':        { color: 'from-rose-400 to-rose-600',       icon: HiHeart },
-  'Toy Store':        { color: 'from-yellow-400 to-yellow-600',   icon: HiStar },
-  'Sports Shop':      { color: 'from-green-500 to-green-700',     icon: HiLightningBolt },
-  'Jewellery Shop':   { color: 'from-amber-400 to-amber-600',     icon: HiStar },
-  'Optical Store':    { color: 'from-blue-400 to-blue-600',       icon: HiEye },
-  'Pet Shop':         { color: 'from-orange-400 to-orange-600',   icon: HiHeart },
-  'Plant Nursery':    { color: 'from-green-400 to-green-600',     icon: HiHome },
-  'General Store':    { color: 'from-primary-500 to-primary-700', icon: HiShoppingBag },
-  'Other':            { color: 'from-gray-400 to-gray-600',       icon: HiShoppingBag },
+const SUBCATEGORY_IMAGE_KEY_OVERRIDES = {
+  'Mobile Banking Agent (bKash/Nagad)': 'mobile-banking-agent',
+}
+
+function toSubcatKey(str) {
+  if (SUBCATEGORY_IMAGE_KEY_OVERRIDES[str]) {
+    return SUBCATEGORY_IMAGE_KEY_OVERRIDES[str]
+  }
+
+  return str
+    .replace(/['’]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function formatStoreHour(timeStr, t) {
+  if (!timeStr) return ''
+  const [hStr, mStr] = timeStr.split(':')
+  const h = parseInt(hStr, 10)
+  const m = parseInt(mStr, 10)
+  const lang = t('lang_toggle') === 'EN' ? 'bn' : 'en'
+
+  let period
+  if (h >= 5 && h < 12) period = lang === 'bn' ? 'সকাল' : 'AM'
+  else if (h >= 12 && h < 17) period = lang === 'bn' ? 'বিকেল' : 'PM'
+  else if (h >= 17 && h < 20) period = lang === 'bn' ? 'সন্ধ্যা' : 'PM'
+  else period = lang === 'bn' ? 'রাত' : 'PM'
+
+  const hour12 = h % 12 === 0 ? 12 : h % 12
+  const minPart = m > 0 ? `:${String(m).padStart(2, '0')}` : ''
+
+  if (lang === 'bn') {
+    return `${period} ${hour12}${minPart}টা`
+  }
+  return `${hour12}${minPart} ${period}`
 }
 
 function Business() {
@@ -57,8 +59,13 @@ function Business() {
   const [searchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
   const mainParam = searchParams.get('main')
+  const viewParam = searchParams.get('view')
+  const { t } = useTranslation()
+  const { userProfile } = useAuth()
+  const userRole = userProfile?.role || null
 
   const [businesses, setBusinesses] = useState([])
+  const [filteredBusinesses, setFilteredBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -71,19 +78,38 @@ function Business() {
   const [showCategories, setShowCategories] = useState(!categoryParam)
   const [showSubcategories, setShowSubcategories] = useState(false)
   const [selectedMainCategory, setSelectedMainCategory] = useState(null)
+  const [activeChip, setActiveChip] = useState('all')
+  const [favourites, setFavourites] = useState({})
+
+  const toggleFavourite = (id, e) => {
+    e.stopPropagation()
+    setFavourites(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   useEffect(() => {
+    if (activeChip === 'open') {
+      setFilteredBusinesses(
+        businesses.filter(b => isBusinessOpen(b.storeSettings?.openingHours))
+      )
+    } else {
+      setFilteredBusinesses(businesses)
+    }
+  }, [businesses, activeChip])
+
+  useEffect(() => {
+    if (viewParam === 'all') {
+      setShowCategories(false)
+      setShowSubcategories(false)
+      setSelectedMainCategory(null)
+      setSelectedCategory('')
+      return
+    }
     if (categoryParam) {
       setSelectedCategory(categoryParam)
       setShowCategories(false)
       setShowSubcategories(false)
-
-      // Find parent main category so back button works
-      const parent = BUSINESS_TYPES.find(c =>
-        c.subcategories.includes(categoryParam)
-      )
+      const parent = BUSINESS_TYPES.find(c => c.subcategories.includes(categoryParam))
       if (parent) setSelectedMainCategory(parent)
-
     } else if (mainParam) {
       const found = BUSINESS_TYPES.find(c => c.id === mainParam)
       if (found) {
@@ -92,7 +118,7 @@ function Business() {
         setShowSubcategories(true)
       }
     }
-  }, [categoryParam, mainParam])
+  }, [categoryParam, mainParam, viewParam])
 
   useEffect(() => {
     if (!showCategories) {
@@ -119,7 +145,6 @@ function Business() {
   const loadBusinesses = async (loadMore = false) => {
     try {
       setError(null)
-
       if (loadMore) {
         setLoadingMore(true)
       } else {
@@ -127,36 +152,27 @@ function Business() {
         setBusinesses([])
         setLastDoc(null)
       }
-
       const filters = {
         search: searchTerm,
         category: selectedCategory,
         location: selectedLocationFilter,
         lastDoc: loadMore ? lastDoc : null
       }
-
       const result = await getBusinesses(filters)
-
       if (loadMore) {
         setBusinesses(prev => [...prev, ...result.businesses])
       } else {
         setBusinesses(result.businesses)
       }
-
       setLastDoc(result.lastDoc)
       setHasMore(result.hasMore)
-    } catch (error) {
-      console.error('Error loading businesses:', error)
+    } catch (err) {
+      console.error('Error loading businesses:', err)
       setError('Failed to load businesses. Please check your connection.')
     } finally {
       setLoading(false)
       setLoadingMore(false)
     }
-  }
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-    loadBusinesses()
   }
 
   const handleClearFilters = () => {
@@ -195,436 +211,583 @@ function Business() {
 
   if (showCategories) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-              Find Businesses
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Choose a category to browse
-            </p>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5"
+            >
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-1">
+                {t('business.page_title')}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('business.page_subtitle')}
+              </p>
+            </motion.div>
 
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowCategories(false)}
-            className="w-full mb-6 px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-3"
-          >
-            <HiViewGrid size={24} />
-            All Businesses
-          </motion.button>
+            <div className="flex items-center justify-between mt-5 mb-3">
+              <span className="text-base font-black text-gray-900 dark:text-white">
+                {t('business.all_categories')}
+              </span>
+              <button
+                onClick={() => setShowCategories(false)}
+                className="text-sm font-semibold text-primary-600 dark:text-primary-400"
+              >
+                {t('business.see_all_businesses')}
+              </button>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {BUSINESS_TYPES.map((category, index) => {
-              const config = CATEGORY_CONFIG[category.label] || CATEGORY_CONFIG['Other']
-              const IconComponent = config.icon
-              return (
+            <div className="grid grid-cols-2 gap-3">
+              {BUSINESS_TYPES.map((category, index) => (
                 <motion.button
                   key={category.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  transition={{ delay: index * 0.03, duration: 0.3 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => handleMainCategorySelect(category)}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-3 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-primary-200 dark:hover:border-primary-800 transition-all overflow-hidden text-left"
                 >
-                  <div className={`w-11 h-11 bg-gradient-to-br ${config.color} rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md group-hover:scale-110 transition-transform`}>
-                    <IconComponent size={22} className="text-white" />
+                  <div className="flex items-center justify-between p-3 gap-2 min-h-[80px]">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-primary-600 dark:text-primary-400 leading-normal line-clamp-2">
+                        {t('categories_bn.' + category.id) || category.label}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {category.subcategories.length}+ {t('business.subcategory_count')}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 w-16 h-16">
+                      <img
+                        src={`/images/categories/${category.id}.webp`}
+                        alt=""
+                        className="w-full h-full object-contain drop-shadow-sm"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                      <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                        <HiShoppingBag size={28} className="text-primary-300 dark:text-primary-700" />
+                      </div>
+                    </div>
                   </div>
-                  <p className="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                    {category.label}
-                  </p>
                 </motion.button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+
+            {userRole !== 'business' && userRole !== 'service' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-6"
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3 p-4">
+                  <div className="w-12 h-12 flex-shrink-0">
+                    <img
+                      src="/images/cta-shop.webp"
+                      alt=""
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                    <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                      <HiShoppingBag size={24} className="text-primary-400 dark:text-primary-500" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">{t('business.cta_title')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{t('business.cta_subtitle')}</p>
+                  </div>
+                  <Link to="/signup" className="flex-shrink-0">
+                    <div className="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap flex items-center gap-1">
+                      {t('business.cta_button')}
+                      <HiArrowRight size={12} />
+                    </div>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
       </div>
     )
   }
 
-  // STEP 2: Subcategory grid
   if (showSubcategories && selectedMainCategory) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={handleBackToCategories}
-            className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-4 hover:gap-3 transition-all"
-          >
-            <HiArrowLeft size={18} />
-            All Categories
-          </motion.button>
-
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-              {selectedMainCategory.label}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Choose a subcategory
-            </p>
-          </motion.div>
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={handleBackToCategories}
+              className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-4"
+            >
+              <HiArrowLeft size={16} />
+              {t('business.back_to_categories')}
+            </motion.button>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {selectedMainCategory.subcategories.map((subcategory, index) => {
-              const config = CATEGORY_CONFIG[subcategory] || CATEGORY_CONFIG['Other']
-              const IconComponent = config.icon
-              return (
+            <div className="mb-4">
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">
+                {t('categories_bn.' + selectedMainCategory.id) || selectedMainCategory.label}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {selectedMainCategory.subcategories.length}+ {t('business.subcategory_count')}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-gray-900 dark:text-white">
+                {t('business.all_subcategories')}
+              </span>
+              <button
+                onClick={() => {
+                  setShowSubcategories(false)
+                  setShowCategories(false)
+                  setSelectedCategory('')
+                }}
+                className="text-sm font-semibold text-primary-600 dark:text-primary-400"
+              >
+                {t('business.see_all_businesses')}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {selectedMainCategory.subcategories.map((subcategory, index) => (
                 <motion.button
                   key={subcategory}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
-                  whileHover={{ y: -2, scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
+                  transition={{ delay: index * 0.02, duration: 0.3 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => handleSubcategorySelect(subcategory)}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-4 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-all group"
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-primary-200 dark:hover:border-primary-800 transition-all overflow-hidden text-left"
                 >
-                  <div className={`w-10 h-10 bg-gradient-to-br ${config.color} rounded-lg flex items-center justify-center mx-auto mb-2 shadow-md group-hover:scale-105 transition-transform`}>
-                    <IconComponent size={18} className="text-white" />
+                  <div className="flex items-center gap-3 p-3 min-h-[72px]">
+                    <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
+                      <img
+                        src={`/images/subcategories/${toSubcatKey(subcategory)}.webp`}
+                        alt=""
+                        className="w-12 h-12 object-contain"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                      <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                        <HiShoppingBag size={20} className="text-primary-400 dark:text-primary-500" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 dark:text-white leading-normal line-clamp-2">
+                        {t('subcategories.' + toSubcatKey(subcategory), { defaultValue: subcategory })}
+                      </p>
+                    </div>
                   </div>
-                  <p className="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                    {subcategory}
-                  </p>
                 </motion.button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+
+            {userRole !== 'business' && userRole !== 'service' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-6"
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-3 p-4">
+                  <div className="w-12 h-12 flex-shrink-0">
+                    <img
+                      src="/images/cta-shop.webp"
+                      alt=""
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                    <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                      <HiShoppingBag size={24} className="text-primary-400 dark:text-primary-500" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">{t('business.cta_title')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{t('business.cta_subtitle')}</p>
+                  </div>
+                  <Link to="/signup" className="flex-shrink-0">
+                    <div className="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap flex items-center gap-1">
+                      {t('business.cta_button')}
+                      <HiArrowRight size={12} />
+                    </div>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          transition={{ duration: 0.35, ease: 'easeOut' }}
         >
+
           {selectedCategory && (
             <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               onClick={handleBackToSubcategories}
-              className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-4 hover:gap-3 transition-all"
+              className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 font-semibold text-sm mb-3"
             >
-              <HiArrowLeft size={18} />
-              Sub Categories
+              <HiArrowLeft size={16} />
+              {t('business.back_to_subcategories')}
             </motion.button>
           )}
-          <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-2">
-            Discover Businesses
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Find local businesses in Dakshinkhan
-          </p>
-        </motion.div>
 
-        {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <form onSubmit={handleSearch} className="flex gap-3">
+          <div className="mb-4">
+            <h1 className="text-xl font-black text-gray-900 dark:text-white mb-0.5">
+              {selectedCategory
+                ? t('subcategories.' + toSubcatKey(selectedCategory), { defaultValue: selectedCategory })
+                : t('business.discover_title')}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('business.discover_subtitle')}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
             <div className="flex-1 relative">
-              <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <HiSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                size={18}
+              />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search businesses..."
-                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                onKeyDown={(e) => { if (e.key === 'Enter') loadBusinesses() }}
+                placeholder={t('business.search_placeholder')}
+                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setShowFilters(!showFilters)}
-              className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all shadow-md active:scale-95 bg-gradient-to-br from-primary-500 to-primary-700"
             >
-              <HiFilter size={20} />
-              <span className="hidden sm:inline">Filters</span>
-            </motion.button>
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg transition-all"
-            >
-              Search
-            </motion.button>
-          </form>
-        </motion.div>
+              <HiAdjustments size={22} className="text-white" />
+            </button>
+          </div>
 
-        {/* Filters Panel */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filters</h3>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-4 -mx-4 px-4">
+            {[
+              { key: 'all', label: t('business.chip_all') },
+              { key: 'open', label: t('business.chip_open') },
+              { key: 'top', label: t('business.chip_top') },
+              { key: 'popular', label: t('business.chip_popular') },
+            ].map((chip) => (
               <button
-                onClick={handleClearFilters}
-                className="text-sm text-primary-600 dark:text-primary-400 font-semibold hover:underline"
+                key={chip.key}
+                onClick={() => setActiveChip(chip.key)}
+                className={`px-4 py-2 rounded-full text-sm font-bold flex-shrink-0 transition-all whitespace-nowrap border ${
+                  activeChip === chip.key
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                }`}
               >
-                Clear All
+                {chip.label}
               </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                  Category
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
-                >
-                  <option value="">All Categories</option>
-                  {BUSINESS_TYPES.map(cat => (
-                    <optgroup key={cat.id} label={cat.label}>
-                      {cat.subcategories.map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              {/* Location Filter */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                  Location
-                </label>
-                <select
-                  value={selectedLocationFilter}
-                  onChange={(e) => setSelectedLocationFilter(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
-                >
-                  <option value="ALL Areas">{ALL_AREAS_LABEL}</option>
-                  {LOCATIONS.map(location => (
-                    <option key={location} value={location}>{location}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setShowFilters(false)
-                  loadBusinesses()
-                }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg transition-all"
-              >
-                Apply Filters
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Active Filters Display */}
-        {(selectedCategory || selectedLocationFilter !== 'ALL Areas' || searchTerm) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex flex-wrap gap-2"
-          >
-            {searchTerm && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                Search: {searchTerm}
-                <button onClick={() => setSearchTerm('')}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-            {selectedCategory && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                {selectedCategory}
-                <button onClick={() => setSelectedCategory('')}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-            {selectedLocationFilter !== 'ALL Areas' && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                {selectedLocationFilter}
-                <button onClick={() => setSelectedLocationFilter('ALL Areas')}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-          </motion.div>
-        )}
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden animate-pulse">
-                <div className="w-full h-40 bg-gray-200 dark:bg-gray-700"></div>
-                <div className="p-3">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                </div>
-              </div>
             ))}
           </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500 dark:text-red-400 font-semibold mb-4">{error}</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => loadBusinesses()}
-              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
-            >
-              Try Again
-            </motion.button>
-          </div>
-        ) : businesses.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20"
-          >
-            <div className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiShoppingBag size={40} className="text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              No businesses found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Try adjusting your filters or search terms
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleClearFilters}
-              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
-            >
-              Clear Filters
-            </motion.button>
-          </motion.div>
-        ) : (
-          <>
-            {/* Business Cards Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {businesses.map((business, index) => {
-                const storeSettings = business.storeSettings || {}
-                const isOpen = isBusinessOpen(storeSettings.openingHours)
-                const serviceArea = storeSettings.serviceAreas?.includes('ALL')
-                  ? 'All Areas'
-                  : storeSettings.serviceAreas?.[0] || 'Dakshinkhan'
 
-                return (
-                  <motion.div
-                    key={business.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    onClick={() => handleBusinessClick(business.id)}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden cursor-pointer group transition-shadow"
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden"
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-base font-black text-gray-900 dark:text-white">
+                    {t('business.filter_title')}
+                  </span>
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-sm text-primary-600 dark:text-primary-400 font-semibold"
                   >
-                    {/* Business Image / Placeholder */}
-                    <div className="relative w-full h-40">
-                      {business.photoURL ? (
-                        <img
-                          src={business.photoURL}
-                          alt={storeSettings.storeName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-40 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                          <span className="text-5xl font-black text-white/40">
-                            {storeSettings.storeName?.[0]?.toUpperCase() || 'B'}
-                          </span>
-                        </div>
-                      )}
+                    {t('business.filter_clear')}
+                  </button>
+                </div>
 
-                      {/* Open/Closed Badge */}
-                      <div className="absolute top-2 right-2">
-                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-lg ${
-                          isOpen
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-800/80 text-gray-300'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            isOpen ? 'bg-white animate-pulse' : 'bg-gray-400'
-                          }`}></span>
-                          {isOpen ? 'Open' : 'Closed'}
-                        </span>
-                      </div>
-                    </div>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  {t('business.filter_category')}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {BUSINESS_TYPES.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(selectedCategory === category.label ? '' : category.label)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        selectedCategory === category.label
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {t('categories_bn.' + category.id) || category.label}
+                    </button>
+                  ))}
+                </div>
 
-                    {/* Business Info */}
-                    <div className="p-3">
-                      <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-0.5 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                        {storeSettings.storeName || 'Business'}
-                      </h3>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  {t('business.filter_location')}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <button
+                    onClick={() => setSelectedLocationFilter('ALL Areas')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      selectedLocationFilter === 'ALL Areas'
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    {t('business.all_areas')}
+                  </button>
+                  {LOCATIONS.map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => setSelectedLocationFilter(loc)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        selectedLocationFilter === loc
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {t('locations.' + loc) || loc}
+                    </button>
+                  ))}
+                </div>
 
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-1">
-                        {storeSettings.businessType || 'Store'}
-                      </p>
-
-                      <div className="flex items-center gap-1">
-                        <HiLocationMarker size={13} className="text-gray-400 flex-shrink-0" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {serviceArea}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="mt-8 text-center">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => loadBusinesses(true)}
-                  disabled={loadingMore}
-                  className="px-8 py-3 bg-white dark:bg-gray-800 border-2 border-primary-600 text-primary-600 dark:text-primary-400 rounded-xl font-bold hover:bg-primary-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setShowFilters(false); loadBusinesses() }}
+                  className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-colors"
                 >
-                  {loadingMore ? 'Loading...' : 'Load More'}
+                  {t('business.filter_apply')}
                 </motion.button>
               </div>
-            )}
-          </>
-        )}
+            </motion.div>
+          )}
+
+          {(selectedCategory || selectedLocationFilter !== 'ALL Areas' || searchTerm) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex flex-wrap gap-2"
+            >
+              {searchTerm && (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
+                  {searchTerm}
+                  <button onClick={() => setSearchTerm('')}>
+                    <HiX size={14} />
+                  </button>
+                </span>
+              )}
+              {selectedCategory && (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
+                  {t('subcategories.' + toSubcatKey(selectedCategory), { defaultValue: selectedCategory })}
+                  <button onClick={() => setSelectedCategory('')}>
+                    <HiX size={14} />
+                  </button>
+                </span>
+              )}
+              {selectedLocationFilter !== 'ALL Areas' && (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
+                  {t('locations.' + selectedLocationFilter) || selectedLocationFilter}
+                  <button onClick={() => setSelectedLocationFilter('ALL Areas')}>
+                    <HiX size={14} />
+                  </button>
+                </span>
+              )}
+            </motion.div>
+          )}
+
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-3 animate-pulse">
+                  <div className="w-32 h-28 bg-gray-200 dark:bg-gray-700 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 space-y-2 pt-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-red-500 dark:text-red-400 font-semibold mb-4">{error}</p>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => loadBusinesses()}
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
+              >
+                {t('business.try_again')}
+              </motion.button>
+            </div>
+          ) : filteredBusinesses.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-20"
+            >
+              <div className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HiShoppingBag size={40} className="text-gray-400 dark:text-gray-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                {t('business.no_businesses')}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {t('business.no_businesses_sub')}
+              </p>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleClearFilters}
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
+              >
+                {t('business.clear_filters')}
+              </motion.button>
+            </motion.div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {filteredBusinesses.map((business, index) => {
+                  const storeSettings = business.storeSettings || {}
+                  const isOpen = isBusinessOpen(storeSettings.openingHours)
+                  const serviceArea = storeSettings.serviceAreas?.includes('ALL')
+                    ? 'All Areas'
+                    : storeSettings.serviceAreas?.[0] || 'Dakshinkhan'
+                  const openingHours = storeSettings.openingHours || {}
+                  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                  const todayKey = days[new Date().getDay()]
+                  const todayHours = openingHours[todayKey]
+
+                  return (
+                    <motion.div
+                      key={business.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.04, duration: 0.3 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleBusinessClick(business.id)}
+                      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                    >
+                      <div className="flex">
+                        <div className="w-32 flex-shrink-0 relative min-h-[120px]">
+                          {storeSettings.photoURL ? (
+                            <img
+                              src={storeSettings.photoURL}
+                              alt=""
+                              className="w-full h-full object-cover absolute inset-0"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 absolute inset-0 flex items-center justify-center">
+                              <HiOfficeBuilding size={32} className="text-primary-400 dark:text-primary-600" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 p-3 flex flex-col justify-between min-h-[120px]">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1 flex-1">
+                              {storeSettings.storeName || 'Business'}
+                            </h3>
+                            <button
+                              className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center"
+                              onClick={(e) => toggleFavourite(business.id, e)}
+                            >
+                              {favourites[business.id] ? (
+                                <HiHeart size={14} className="text-red-500" />
+                              ) : (
+                                <HiOutlineHeart size={14} className="text-gray-400 dark:text-gray-500" />
+                              )}
+                            </button>
+                          </div>
+
+                          <div className="space-y-0.5 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                              {storeSettings.businessType
+                                ? t('subcategories.' + toSubcatKey(storeSettings.businessType), { defaultValue: storeSettings.businessType })
+                                : ''}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <HiLocationMarker size={11} className="text-primary-500 dark:text-primary-400 flex-shrink-0" />
+                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                {t('locations.' + serviceArea) || serviceArea}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                              isOpen
+                                ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800'
+                                : 'bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
+                            }`}>
+                              {isOpen ? t('business.open_now') : t('business.closed')}
+                            </span>
+                            {todayHours && !todayHours.closed && todayHours.open && todayHours.close && (
+                              <div className="flex items-center gap-1">
+                                <HiClock size={11} className="text-gray-400 dark:text-gray-500" />
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  {formatStoreHour(todayHours.open, t)} - {formatStoreHour(todayHours.close, t)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+
+              {hasMore && (
+                <div className="mt-8 text-center">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => loadBusinesses(true)}
+                    disabled={loadingMore}
+                    className="px-8 py-3 bg-white dark:bg-gray-800 border-2 border-primary-600 text-primary-600 dark:text-primary-400 rounded-xl font-bold hover:bg-primary-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loadingMore ? t('business.loading') : t('business.load_more')}
+                  </motion.button>
+                </div>
+              )}
+            </>
+          )}
+
+        </motion.div>
       </div>
     </div>
   )

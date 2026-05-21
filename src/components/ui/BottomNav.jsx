@@ -1,4 +1,4 @@
-// src/components/layout/BottomNav.jsx
+// src/components/ui/BottomNav.jsx
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -72,15 +72,15 @@ function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-gray-100/80 dark:border-gray-800/80"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-gray-100/80 dark:border-gray-800/80 overflow-visible"
       style={{
         background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}
     >
-      <div className="dark:bg-gray-900/92">
-        <div className="flex items-center h-16 px-2">
+      <div className="bg-white/95 dark:bg-gray-900/95 overflow-visible">
+        <div className="flex items-center h-16 px-2 overflow-visible">
           {navItems.map((item) => {
             const active = checkActive(item)
 
@@ -92,22 +92,17 @@ function BottomNav() {
                     e.preventDefault()
                     navigate(item.path, { state: { ts: Date.now() } })
                   }}
-                  className="flex flex-col items-center justify-center flex-1 h-full gap-1 relative"
+                  className="flex flex-col items-center justify-end flex-1 h-full pb-1 relative overflow-visible"
                 >
-                  <motion.div
-                    whileTap={{ scale: 0.92 }}
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-colors ${
-                      active
-                        ? 'bg-primary-600 shadow-primary-200 dark:shadow-primary-900'
-                        : 'bg-gray-100 dark:bg-gray-800'
-                    }`}
-                  >
-                    <item.Icon
-                      size={22}
-                      weight="duotone"
-                      className={active ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
-                    />
-                  </motion.div>
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white dark:bg-gray-900 shadow-lg flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-primary-600 shadow-lg shadow-primary-600/30 flex items-center justify-center transition-colors">
+                      <item.Icon
+                        size={22}
+                        weight="duotone"
+                        className="text-white"
+                      />
+                    </div>
+                  </div>
                   <span className={`text-[10px] font-medium transition-colors ${
                     active
                       ? 'text-primary-600 dark:text-primary-400'
