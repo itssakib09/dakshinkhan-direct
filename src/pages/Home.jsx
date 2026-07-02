@@ -433,6 +433,8 @@ function Home() {
                         </div>
                       )}
                       <button
+                        type="button"
+                        aria-label="Add to favourites"
                         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center shadow-sm"
                         onClick={(e) => { e.stopPropagation(); toggleFavourite(business.id) }}
                       >
@@ -519,6 +521,8 @@ function Home() {
                         </div>
                       )}
                       <button
+                        type="button"
+                        aria-label="Add to favourites"
                         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 dark:bg-gray-900/90 flex items-center justify-center shadow-sm"
                         onClick={(e) => { e.stopPropagation(); toggleFavourite(provider.id) }}
                       >

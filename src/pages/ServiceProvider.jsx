@@ -121,6 +121,7 @@ function ServiceProvider() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleBack}
+          aria-label="Go back"
           className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 font-semibold mb-6 transition-colors"
         >
           <HiArrowLeft size={20} />

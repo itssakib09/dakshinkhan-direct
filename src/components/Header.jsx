@@ -35,12 +35,13 @@ function Header({ onMenuClick }) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onMenuClick}
+              aria-label="Open menu"
               className="hidden md:flex lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 items-center justify-center transition-colors"
             >
               <HiMenu size={20} className="text-gray-700 dark:text-gray-300" />
             </motion.button>
 
-            <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
+            <Link to="/" aria-label="Dakshinkhan Direct - Home" className="flex items-center space-x-2 sm:space-x-3 group">
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
@@ -76,6 +77,7 @@ function Header({ onMenuClick }) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleLang}
+              aria-label="Toggle language"
               className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-300 shadow-md"
             >
               <span className="text-xs font-black text-gray-700 dark:text-gray-300">
@@ -86,6 +88,7 @@ function Header({ onMenuClick }) {
             <motion.button
               whileHover={{ scale: 1.05, rotate: 10 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Notifications"
               className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700 hover:from-primary-100 hover:to-primary-200 dark:hover:from-gray-700 dark:hover:to-gray-600 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg group"
             >
               <HiBell size={18} className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
@@ -100,6 +103,7 @@ function Header({ onMenuClick }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => navigate('/dashboard')}
+                  aria-label="Open dashboard"
                   className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary-200 dark:ring-primary-900 flex-shrink-0"
                 >
                   {userProfile?.photoURL ? (

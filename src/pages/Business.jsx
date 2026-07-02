@@ -723,6 +723,8 @@ function Business() {
                               {storeSettings.storeName || 'Business'}
                             </h3>
                             <button
+                              type="button"
+                              aria-label="Add to favourites"
                               className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center"
                               onClick={(e) => toggleFavourite(business.id, e)}
                             >

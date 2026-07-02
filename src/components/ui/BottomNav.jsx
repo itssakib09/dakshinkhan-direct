@@ -88,6 +88,7 @@ function BottomNav() {
               return (
                 <button
                   key={item.id}
+                  aria-label={t(item.labelKey)}
                   onClick={(e) => {
                     e.preventDefault()
                     navigate(item.path, { state: { ts: Date.now() } })
@@ -117,6 +118,7 @@ function BottomNav() {
             return (
               <button
                 key={item.id}
+                aria-label={t(item.labelKey)}
                 onClick={(e) => {
                   e.preventDefault()
                   navigate(item.path, { state: { ts: Date.now() } })

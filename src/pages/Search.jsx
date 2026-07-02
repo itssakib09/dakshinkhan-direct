@@ -82,11 +82,16 @@ function Search() {
           <form onSubmit={handleSearch} className="w-full">
             <div className="relative flex items-center ring-2 ring-primary-500 dark:ring-primary-400 rounded-xl bg-white dark:bg-gray-800">
               <HiSearch size={20} className="absolute left-4 text-gray-400 dark:text-gray-500" />
+              <label htmlFor="search-input" className="sr-only">
+                Search businesses and services
+              </label>
               <input
+                id="search-input"
                 type="text"
                 value={localQuery}
                 onChange={(e) => setLocalQuery(e.target.value)}
                 placeholder={`Search in ${selectedLocation || 'All Areas'}...`}
+                aria-label="Search businesses and services"
                 className="w-full pl-12 pr-24 py-4 bg-transparent text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
                 autoFocus
               />
@@ -94,6 +99,7 @@ function Search() {
                 <>
                   <button
                     type="button"
+                    aria-label="Clear search"
                     onClick={clearSearch}
                     className="absolute right-20 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
 import {
   HiArrowLeft,
   HiPhone,
@@ -10,36 +12,82 @@ import {
   HiShoppingBag,
   HiCheckCircle,
   HiXCircle,
-  HiFilter,
-  HiX
+  HiHeart,
+  HiCalendar,
+  HiShare,
+  HiChevronDown,
+  HiChevronUp
 } from 'react-icons/hi'
 import { getBusinessById, isBusinessOpen } from '../services/businessService'
 import { getStoreListings } from '../services/listingService'
 import { WEEK_DAYS, DAY_LABELS } from '../data/storeHours'
 
+function toBn(str) {
+  const map = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'}
+  return String(str).split('').map(c => map[c] || c).join('')
+}
+
+function formatHour(timeStr, lang) {
+  if (!timeStr) return ''
+  const [hStr, mm] = timeStr.split(':')
+  const h = parseInt(hStr)
+  const isBn = lang?.startsWith('bn')
+  if (!isBn) {
+    if (h === 0) return `12:${mm} AM`
+    if (h < 12) return `${h}:${mm} AM`
+    if (h === 12) return `12:${mm} PM`
+    return `${h - 12}:${mm} PM`
+  }
+  if (h < 6) return `রাত ${toBn(h)}:${toBn(mm)}`
+  if (h < 12) return `সকাল ${toBn(h)}:${toBn(mm)}`
+  if (h === 12) return `দুপুর ১২:${toBn(mm)}`
+  if (h < 17) return `বিকাল ${toBn(h - 12)}:${toBn(mm)}`
+  if (h < 20) return `সন্ধ্যা ${toBn(h - 12)}:${toBn(mm)}`
+  return `রাত ${toBn(h - 12)}:${toBn(mm)}`
+}
+
+function groupHours(openingHours, todayKey) {
+  if (!openingHours) return []
+  const groups = []
+  let i = 0
+  while (i < WEEK_DAYS.length) {
+    const day = WEEK_DAYS[i]
+    const info = openingHours[day] || { closed: true }
+    let j = i + 1
+    while (j < WEEK_DAYS.length) {
+      const next = openingHours[WEEK_DAYS[j]] || { closed: true }
+      const same = info.closed === next.closed && info.open === next.open && info.close === next.close
+      if (!same) break
+      j++
+    }
+    groups.push({
+      days: WEEK_DAYS.slice(i, j),
+      open: info.open,
+      close: info.close,
+      isClosed: !!info.closed
+    })
+    i = j
+  }
+  return groups
+}
+
 function Store() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
+  const { currentUser } = useAuth()
 
   const [business, setBusiness] = useState(null)
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showFilters, setShowFilters] = useState(false)
-
-  // Filters
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' })
-  const [showInStock, setShowInStock] = useState(false)
-
-  // Categories (derived from listings)
   const [categories, setCategories] = useState([])
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [showAllAreas, setShowAllAreas] = useState(false)
+  const [selectedTab, setSelectedTab] = useState('all')
 
-  // Today's day index (0 = Sunday ... 6 = Saturday)
-  const todayIndex = new Date().getDay()
-  // WEEK_DAYS order assumed: ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
-  // Map JS day index to WEEK_DAYS position
-  const todayKey = WEEK_DAYS[todayIndex]
+  const jsToWeekDay = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+  const todayKey = jsToWeekDay[new Date().getDay()]
 
   useEffect(() => {
     loadStoreData()
@@ -48,65 +96,38 @@ function Store() {
   const loadStoreData = async () => {
     try {
       setLoading(true)
-
       const businessData = await getBusinessById(id)
       if (!businessData) {
-        setError('Store not found')
+        setError('not_found')
         return
       }
       setBusiness(businessData)
-
       const listingsData = await getStoreListings(id)
       setListings(listingsData)
-
-      const uniqueCategories = [...new Set(
-        listingsData
-          .map(listing => listing.category)
-          .filter(Boolean)
-      )]
-      setCategories(uniqueCategories)
-
+      const uniqueCats = [...new Set(listingsData.map(l => l.category).filter(Boolean))]
+      setCategories(uniqueCats)
     } catch (err) {
       console.error('Error loading store:', err)
-      setError('Failed to load store')
+      setError('failed')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleContactClick = () => {
-    if (business?.storeSettings?.storePhone) {
-      window.location.href = `tel:${business.storeSettings.storePhone}`
-    }
-  }
-
-  const handleClearFilters = () => {
-    setSelectedCategory('')
-    setPriceRange({ min: '', max: '' })
-    setShowInStock(false)
-  }
-
-  // Filter listings
-  const filteredListings = listings.filter(listing => {
-    if (selectedCategory && listing.category !== selectedCategory) return false
-    if (priceRange.min && listing.price < parseFloat(priceRange.min)) return false
-    if (priceRange.max && listing.price > parseFloat(priceRange.max)) return false
-    if (showInStock && listing.status !== 'active') return false
-    return true
-  })
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="animate-pulse space-y-6">
-            <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
-            <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
-              ))}
-            </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
+        <div className="max-w-2xl mx-auto animate-pulse">
+          <div className="flex justify-between px-4 pt-4 mb-3">
+            <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+            <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+          </div>
+          <div className="h-52 bg-gray-200 dark:bg-gray-700 w-full" />
+          <div className="mx-4 -mt-6 h-44 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+          <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+            ))}
           </div>
         </div>
       </div>
@@ -115,31 +136,21 @@ function Store() {
 
   if (error || !business) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-sm border border-gray-100 dark:border-gray-700 shadow-sm">
+          <HiXCircle size={48} className="text-red-400 mx-auto mb-4" />
+          <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">
+            {t('store.not_found_title')}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            {t('store.not_found_sub')}
+          </p>
+          <button
+            onClick={() => navigate('/business')}
+            className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors"
           >
-            <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiXCircle size={40} className="text-red-600 dark:text-red-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              {error || 'Store Not Found'}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              The store you're looking for doesn't exist or is not active.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/business')}
-              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all"
-            >
-              Browse Businesses
-            </motion.button>
-          </motion.div>
+            {t('store.browse_businesses')}
+          </button>
         </div>
       </div>
     )
@@ -147,455 +158,498 @@ function Store() {
 
   const storeSettings = business.storeSettings || {}
   const isOpen = isBusinessOpen(storeSettings.openingHours)
-  const serviceAreasDisplay = storeSettings.serviceAreas?.join(', ') || 'Dakshinkhan'
+  const isOwner = currentUser?.uid === business?.id
+  const productCount = listings.length
+  const serviceAreas = storeSettings.serviceAreas || []
 
-  const handleBack = () => navigate(-1)
+  const filteredListings = selectedTab === 'all'
+    ? listings
+    : listings.filter(l => l.category === selectedTab)
+
+  let joinedYear = ''
+  try {
+    const raw = business.createdAt
+    if (raw?.toDate) joinedYear = raw.toDate().getFullYear()
+    else if (raw) joinedYear = new Date(raw).getFullYear()
+  } catch {}
+
+  const lang = i18n.language?.startsWith('bn') ? 'bn' : 'en'
+
+  const formatCloseTime = () => {
+    const hours = storeSettings.openingHours?.[todayKey]
+    if (!hours || hours.closed) return ''
+    return formatHour(hours.close, lang)
+  }
+
+  const closeTime = formatCloseTime()
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: storeSettings.storeName || '', url: window.location.href }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(window.location.href).catch(() => {})
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-8 md:pb-8">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleBack}
-          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 font-semibold mb-6 transition-colors"
-        >
-          <HiArrowLeft size={20} />
-          Back
-        </motion.button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 lg:pb-8">
+      <div className="max-w-2xl mx-auto">
 
-        {/* Store Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden mb-6"
-        >
-          {/* Cover Image */}
-          {business.photoURL ? (
-            <div className="relative h-48 overflow-hidden">
+        <div className="flex items-center px-4 pt-4 pb-2">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center"
+          >
+            <HiArrowLeft size={18} className="text-gray-700 dark:text-gray-300" />
+          </motion.button>
+        </div>
+
+        <div className="relative w-full h-52 overflow-hidden">
+          {storeSettings.photoURL ? (
+            <>
               <img
-                src={business.photoURL}
+                src={storeSettings.photoURL}
                 alt={storeSettings.storeName}
                 className="w-full h-full object-cover"
+                onError={e => {
+                  e.target.style.display = 'none'
+                  e.target.nextSibling.style.display = 'flex'
+                }}
               />
-              {/* Open/Closed Badge */}
-              <div className="absolute top-4 right-4">
-                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${
-                  isOpen ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                  {isOpen ? (
-                    <><HiCheckCircle size={18} />Open Now</>
-                  ) : (
-                    <><HiXCircle size={18} />Closed</>
-                  )}
+              <div
+                style={{ display: 'none' }}
+                className="w-full h-52 absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-800 items-center justify-center overflow-hidden"
+              >
+                <span className="absolute text-9xl font-black text-white/10 select-none">
+                  {storeSettings.storeName?.[0]?.toUpperCase() || 'S'}
                 </span>
+                <div className="relative z-10 w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <HiShoppingBag size={28} className="text-white/60" />
+                </div>
               </div>
-            </div>
+            </>
           ) : (
-            <div className="h-48 bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center relative overflow-hidden">
-              <span className="text-9xl font-black text-white/10 select-none absolute">
+            <div className="w-full h-52 bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center relative overflow-hidden">
+              <span className="absolute text-9xl font-black text-white/10 select-none">
                 {storeSettings.storeName?.[0]?.toUpperCase() || 'S'}
               </span>
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <HiShoppingBag size={32} className="text-white/70" />
-                </div>
-                <p className="text-white/60 text-sm font-semibold">No cover photo</p>
-              </div>
-              {/* Open/Closed Badge */}
-              <div className="absolute top-4 right-4">
-                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${
-                  isOpen ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                  {isOpen ? (
-                    <><HiCheckCircle size={18} />Open Now</>
-                  ) : (
-                    <><HiXCircle size={18} />Closed</>
-                  )}
-                </span>
+              <div className="relative z-10 w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                <HiShoppingBag size={28} className="text-white/60" />
               </div>
             </div>
           )}
 
-          {/* Store Info */}
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-1">
-                  {storeSettings.storeName || business.displayName || 'Store'}
-                </h1>
-                <p className="text-base text-primary-600 dark:text-primary-400 font-bold mb-3">
-                  {storeSettings.businessType || 'Store'}
-                </p>
-
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                    <HiLocationMarker size={16} className="flex-shrink-0" />
-                    <span>{serviceAreasDisplay}</span>
+          <div className="absolute top-4 left-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl px-3 py-2 shadow-md flex flex-col gap-0.5">
+              {isOpen ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-xs font-black text-green-600 dark:text-green-400">
+                      {t('store.open_now')}
+                    </span>
                   </div>
-                  {storeSettings.storePhone && (
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                      <HiPhone size={16} className="flex-shrink-0" />
-                      <span>{storeSettings.storePhone}</span>
-                    </div>
+                  {closeTime && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {lang === 'bn'
+                        ? `${closeTime} ${t('store.open_until')}`
+                        : `${t('store.open_until')} ${closeTime}`}
+                    </span>
                   )}
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="text-xs font-black text-red-600 dark:text-red-400">
+                    {t('store.closed')}
+                  </span>
                 </div>
-              </div>
-
-              {/* Contact Button */}
-              {storeSettings.storePhone && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleContactClick}
-                  className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
-                >
-                  <HiPhone size={20} />
-                  Call Store
-                </motion.button>
               )}
             </div>
           </div>
+
+          <button
+            type="button"
+            aria-label="Add to favourites"
+            onClick={() => setIsFavorited(!isFavorited)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 dark:bg-gray-900/90 rounded-xl shadow-md flex items-center justify-center border border-white/50 dark:border-gray-700"
+          >
+            <HiHeart size={18} className={isFavorited ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'} />
+          </button>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="mx-4 -mt-6 relative z-10 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-md p-4 mb-0"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-16 h-16 flex-shrink-0 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
+              {storeSettings.logoURL ? (
+                <>
+                  <img
+                    src={storeSettings.logoURL}
+                    className="w-full h-full object-cover"
+                    onError={e => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                  <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                    <span className="text-xl font-black text-primary-600 dark:text-primary-400">
+                      {storeSettings.storeName?.[0]?.toUpperCase() || 'S'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <span className="text-xl font-black text-primary-600 dark:text-primary-400">
+                  {storeSettings.storeName?.[0]?.toUpperCase() || 'S'}
+                </span>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-lg font-black text-gray-900 dark:text-white leading-tight">
+                  {storeSettings.storeName || business.displayName || 'Store'}
+                </h1>
+                {storeSettings.verified && (
+                  <HiCheckCircle size={16} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
+                )}
+              </div>
+
+              <p className="text-sm font-semibold text-primary-600 dark:text-primary-400 mt-0.5">
+                {storeSettings.businessType}
+              </p>
+
+              <div className="flex items-center gap-3 flex-wrap mt-2">
+                {productCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <HiShoppingBag size={13} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
+                      {productCount}+ {t('store.products')}
+                    </span>
+                  </div>
+                )}
+                {serviceAreas[0] && (
+                  <div className="flex items-center gap-1">
+                    <HiLocationMarker size={13} className="text-gray-400 dark:text-gray-500" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {serviceAreas[0]}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {storeSettings.storePhone && (
+                <div className="flex items-center gap-1 mt-1">
+                  <HiPhone size={13} className="text-gray-400 dark:text-gray-500" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {storeSettings.storePhone}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {storeSettings.storePhone && (
+            <div className="mt-4 flex gap-2">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { window.location.href = `tel:${storeSettings.storePhone}` }}
+                className={`${storeSettings.whatsappNumber ? 'flex-1' : 'w-full'} bg-primary-600 hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-700 text-white rounded-xl py-3 font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors`}
+              >
+                <HiPhone size={18} />
+                {t('store.call_store')}
+              </motion.button>
+              {storeSettings.whatsappNumber && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => window.open('https://wa.me/' + storeSettings.whatsappNumber.replace(/[^0-9]/g, ''), '_blank')}
+                  className="flex-1 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-xl py-3 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                >
+                  <HiPhone size={18} />
+                  {t('store.whatsapp')}
+                </motion.button>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-3 gap-2">
+            <button
+              onClick={storeSettings.mapLink ? () => window.open(storeSettings.mapLink, '_blank') : undefined}
+              className={`bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 flex flex-col items-center text-center gap-1 ${storeSettings.mapLink ? 'cursor-pointer' : ''}`}
+            >
+              <div className="w-9 h-9 rounded-full mb-0.5 bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
+                <HiLocationMarker size={18} className="text-primary-600 dark:text-primary-400" />
+              </div>
+              <span className="text-xs font-black text-gray-800 dark:text-gray-200">
+                {t('store.address')}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 truncate w-full">
+                {serviceAreas[0] || '-'}
+              </span>
+              {storeSettings.mapLink && (
+                <span className="text-xs font-bold mt-1 text-primary-600 dark:text-primary-400">
+                  {t('store.map_view')}
+                </span>
+              )}
+            </button>
+
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 flex flex-col items-center text-center gap-1">
+              <div className="w-9 h-9 rounded-full mb-0.5 bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
+                <HiCalendar size={18} className="text-primary-600 dark:text-primary-400" />
+              </div>
+              <span className="text-xs font-black text-gray-800 dark:text-gray-200">
+                {t('store.joined')}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {joinedYear || '-'}
+              </span>
+            </div>
+
+            <button
+              onClick={handleShare}
+              className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 flex flex-col items-center text-center gap-1 cursor-pointer"
+            >
+              <div className="w-9 h-9 rounded-full mb-0.5 bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center">
+                <HiShare size={18} className="text-primary-600 dark:text-primary-400" />
+              </div>
+              <span className="text-xs font-black text-gray-800 dark:text-gray-200">
+                {t('store.share_store')}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {t('store.share_sub')}
+              </span>
+            </button>
+          </div>
         </motion.div>
 
-        {/* Store Info Grid */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-6">
-          {/* Opening Hours */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
-          >
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <HiClock size={24} className="text-primary-600 dark:text-primary-400" />
-              Opening Hours
-            </h2>
-            <div className="space-y-1.5">
-              {WEEK_DAYS.map(day => {
-                const hours = storeSettings.openingHours?.[day]
-                const isClosed = hours?.closed
-                const isToday = day === todayKey
+        {categories.length > 0 && (
+          <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 mt-4">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
+              <button
+                onClick={() => setSelectedTab('all')}
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all border ${
+                  selectedTab === 'all'
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                }`}
+              >
+                {t('store.all_products')}
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedTab(cat)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all border capitalize ${
+                    selectedTab === cat
+                      ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
+        <div className="mx-4 mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+          <div className="mb-3">
+            <span className="text-base font-black text-gray-900 dark:text-white">
+              {t('store.all_products_label')} ({filteredListings.length})
+            </span>
+          </div>
+
+          {filteredListings.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {filteredListings.map((listing, index) => (
+                <motion.div
+                  key={listing.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden cursor-pointer"
+                >
+                  <div className="w-full h-36 relative bg-gray-100 dark:bg-gray-700">
+                    {listing.images?.[0] ? (
+                      <>
+                        <img
+                          src={listing.images[0]}
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                          onError={e => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'flex'
+                          }}
+                        />
+                        <div
+                          style={{ display: 'none' }}
+                          className="w-full h-full absolute inset-0 items-center justify-center bg-gray-100 dark:bg-gray-700"
+                        >
+                          <HiShoppingBag size={32} className="text-gray-300 dark:text-gray-500" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <HiShoppingBag size={32} className="text-gray-300 dark:text-gray-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 mb-1">
+                      {listing.title}
+                    </p>
+                    {listing.unit && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                        {listing.unit}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-black text-primary-600 dark:text-primary-400">
+                        ৳{listing.price}
+                      </span>
+                      <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${
+                        listing.status === 'active'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {listing.status === 'active' ? t('store.in_stock') : t('store.out_of_stock')}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
+                <HiShoppingBag size={32} className="text-gray-300 dark:text-gray-500" />
+              </div>
+              {isOwner ? (
+                <>
+                  <p className="text-base font-black text-gray-900 dark:text-white mb-1">
+                    {t('store.empty_owner_title')}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    {t('store.empty_owner_sub')}
+                  </p>
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors"
+                  >
+                    {t('store.add_products_cta')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-black text-gray-900 dark:text-white mb-1">
+                    {t('store.empty_title')}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('store.empty_sub')}
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {t('store.no_filter_results')}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {storeSettings.openingHours && (
+          <div className="mx-4 mt-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <HiClock size={18} className="text-primary-600 dark:text-primary-400" />
+                <span className="text-base font-black text-gray-900 dark:text-white">
+                  {t('store.opening_hours')}
+                </span>
+              </div>
+              {groupHours(storeSettings.openingHours, todayKey).map((group, idx) => {
+                const isToday = group.days.includes(todayKey)
+                const dayLabel = group.days.length === 1
+                  ? DAY_LABELS[group.days[0]]
+                  : DAY_LABELS[group.days[0]] + ' - ' + DAY_LABELS[group.days[group.days.length - 1]]
                 return (
                   <div
-                    key={day}
-                    className={`flex justify-between items-center p-2 rounded-lg text-sm ${
-                      isToday
-                        ? 'bg-primary-50 dark:bg-primary-900/20'
-                        : 'bg-gray-50 dark:bg-gray-700'
+                    key={idx}
+                    className={`flex justify-between items-center py-2.5 px-3 rounded-xl mb-1 ${
+                      isToday ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-gray-50 dark:bg-gray-700/40'
                     }`}
                   >
-                    <span className={`capitalize ${
-                      isToday
-                        ? 'font-black text-primary-700 dark:text-primary-300'
-                        : 'font-semibold text-gray-900 dark:text-white'
-                    }`}>
-                      {DAY_LABELS[day]}
+                    <div className="flex items-center flex-wrap gap-1">
+                      <span className={`text-sm ${isToday ? 'font-black text-primary-700 dark:text-primary-300' : 'font-semibold text-gray-700 dark:text-gray-300'}`}>
+                        {dayLabel}
+                      </span>
                       {isToday && (
-                        <span className="text-xs text-primary-600 dark:text-primary-400 font-bold ml-2">
-                          Today
+                        <span className="text-xs bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-200 rounded-full px-2 py-0.5 font-bold">
+                          {t('store.today_label')}
                         </span>
                       )}
-                    </span>
-                    {isClosed ? (
-                      <span className="text-red-600 dark:text-red-400 font-semibold">
-                        Closed
-                      </span>
-                    ) : (
-                      <span className={`font-semibold ${
-                        isToday
+                    </div>
+                    <span className={`text-sm font-semibold ${
+                      group.isClosed
+                        ? 'text-red-500 dark:text-red-400'
+                        : isToday
                           ? 'text-primary-600 dark:text-primary-400'
                           : 'text-green-600 dark:text-green-400'
-                      }`}>
-                        {hours?.open} - {hours?.close}
-                      </span>
-                    )}
+                    }`}>
+                      {group.isClosed
+                        ? t('store.day_closed')
+                        : formatHour(group.open, lang) + ' - ' + formatHour(group.close, lang)
+                      }
+                    </span>
                   </div>
                 )
               })}
             </div>
-          </motion.div>
-
-          {/* Contact & Service Areas */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
-          >
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-4">
-              Contact & Service Areas
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Contact */}
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-3">Contact Information</h3>
-                <div className="space-y-2">
-                  {storeSettings.storePhone && (
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <HiPhone size={18} className="text-primary-600 dark:text-primary-400" />
-                      <a href={`tel:${storeSettings.storePhone}`} className="hover:text-primary-600 dark:hover:text-primary-400">
-                        {storeSettings.storePhone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Service Areas */}
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-3">We Serve</h3>
-                <div className="flex flex-wrap gap-2">
-                  {storeSettings.serviceAreas?.map((area, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-lg text-sm font-semibold"
-                    >
-                      {area}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Products Section Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-baseline">
-            Products
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-              {filteredListings.length} items
-            </span>
-          </h2>
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-          >
-            <HiFilter size={18} />
-            Filters
-          </motion.button>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filters</h3>
-              <button
-                onClick={handleClearFilters}
-                className="text-sm text-primary-600 dark:text-primary-400 font-semibold hover:underline"
-              >
-                Clear All
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Category Filter */}
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(category => (
-                      <option key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                  Price Range
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={priceRange.min}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                    placeholder="Min"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
-                  />
-                  <input
-                    type="number"
-                    value={priceRange.max}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                    placeholder="Max"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                  Availability
-                </label>
-                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showInStock}
-                    onChange={(e) => setShowInStock(e.target.checked)}
-                    className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                  />
-                  <span className="font-semibold text-gray-900 dark:text-white">In Stock Only</span>
-                </label>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Active Filters */}
-        {(selectedCategory || priceRange.min || priceRange.max || showInStock) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex flex-wrap gap-2"
-          >
-            {selectedCategory && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                {selectedCategory}
-                <button onClick={() => setSelectedCategory('')}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-            {(priceRange.min || priceRange.max) && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                ৳{priceRange.min || '0'} - ৳{priceRange.max || '∞'}
-                <button onClick={() => setPriceRange({ min: '', max: '' })}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-            {showInStock && (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                In Stock
-                <button onClick={() => setShowInStock(false)}>
-                  <HiX size={14} />
-                </button>
-              </span>
-            )}
-          </motion.div>
-        )}
-
-        {/* Products Grid */}
-        {filteredListings.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700"
-          >
-            <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiShoppingBag size={40} className="text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              No Products Found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {listings.length === 0
-                ? 'This store has no products listed yet.'
-                : 'Try adjusting your filters.'}
-            </p>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredListings.map((listing, index) => (
-              <motion.div
-                key={listing.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden cursor-pointer group transition-shadow"
-              >
-                {/* Product Image */}
-                <div className="relative w-full h-48 bg-gray-200 dark:bg-gray-700">
-                  {listing.images && listing.images[0] ? (
-                    <img
-                      src={listing.images[0]}
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <HiShoppingBag size={40} className="text-gray-400" />
-                    </div>
-                  )}
-
-                  {/* Stock Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-lg ${
-                      listing.status === 'active'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-800/80 text-gray-300'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        listing.status === 'active' ? 'bg-white animate-pulse' : 'bg-gray-400'
-                      }`}></span>
-                      {listing.status === 'active' ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                  </div>
-
-                  {/* Master Catalog Badge */}
-                  {listing.catalogProductId && (
-                    <div className="absolute top-2 left-2">
-                      <span className="px-2 py-1 bg-blue-500/90 text-white rounded-lg text-xs font-bold backdrop-blur-sm">
-                        Featured
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                    {listing.title}
-                  </h3>
-
-                  {listing.category && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 capitalize">
-                      {listing.category}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-black text-primary-600 dark:text-primary-400">
-                      ৳{listing.price}
-                    </span>
-                    {listing.unit && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        per {listing.unit}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
           </div>
         )}
+
+        {serviceAreas.length > 0 && (
+          <div className="mx-4 mt-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <HiLocationMarker size={18} className="text-primary-600 dark:text-primary-400" />
+                <span className="text-base font-black text-gray-900 dark:text-white">
+                  {t('store.service_areas')}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(showAllAreas ? serviceAreas : serviceAreas.slice(0, 4)).map((area, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-800 rounded-full px-3 py-1.5 text-sm font-semibold"
+                  >
+                    <HiCheckCircle size={13} />
+                    {area}
+                  </span>
+                ))}
+              </div>
+              {serviceAreas.length > 4 && (
+                <button
+                  onClick={() => setShowAllAreas(!showAllAreas)}
+                  className="mt-3 flex items-center gap-1 text-primary-600 dark:text-primary-400 text-sm font-semibold"
+                >
+                  {showAllAreas ? (
+                    <>{t('store.show_less')}<HiChevronUp size={16} /></>
+                  ) : (
+                    <>{t('store.show_more_areas', { count: serviceAreas.length - 4 })}<HiChevronDown size={16} /></>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

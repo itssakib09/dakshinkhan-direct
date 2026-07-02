@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://dakshinkhan-direct.web.app/sitemap.xml
