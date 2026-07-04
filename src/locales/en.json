@@ -169,9 +169,7 @@
     "whatsapp": "WhatsApp",
     "map_view": "View on Map",
     "share_store": "Share Store",
-    "share_link": "Share link",
-    "member_since": "Member",
-    "share_sub": "Tap to share"
+    "share_link": "Share link"
   },
   "categories_bn": {
     "food-dining": "Food & Dining",
@@ -377,5 +375,35 @@
     "professional-services": "Professional Services",
     "health-wellness": "Health & Wellness",
     "animal-agriculture": "Animal & Agriculture"
+  },
+  "provider": {
+    "available": "Available Now",
+    "busy": "Busy",
+    "offline": "Offline",
+    "call_now": "Call Now",
+    "years_exp": "Years Experience",
+    "jobs_done": "Jobs Done",
+    "member_since": "Member Since",
+    "visit_charge": "Visit Charge",
+    "price_note": "Final price depends on work requirements",
+    "service_prices": "Estimated Service Prices",
+    "see_all_services": "See {{count}} more services",
+    "working_hours": "Working Hours",
+    "see_all_hours": "See all hours",
+    "today_label": "Today",
+    "day_closed": "Closed",
+    "service_areas": "Service Areas",
+    "show_more_areas": "{{count}} more areas",
+    "show_less": "Show less",
+    "about": "About",
+    "read_more": "Read more",
+    "show_less_bio": "Show less",
+    "recent_work": "Recent Work Photos",
+    "see_all_photos": "See all photos",
+    "not_found_title": "Profile Not Found",
+    "not_found_sub": "This service provider does not exist",
+    "browse_services": "Browse Services",
+    "provider_tag": "Provider",
+    "today_active": "Active today"
   }
 }

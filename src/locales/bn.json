@@ -169,9 +169,7 @@
     "whatsapp": "হোয়াটসঅ্যাপ",
     "map_view": "মানচিত্রে দেখুন",
     "share_store": "শেয়ার করুন",
-    "share_link": "লিংক শেয়ার",
-    "member_since": "সদস্য",
-    "share_sub": "ট্যাপ করে শেয়ার করুন"
+    "share_link": "লিংক শেয়ার"
   },
   "categories_bn": {
     "food-dining": "খাদ্য ও ভোজন",
@@ -377,5 +375,35 @@
     "professional-services": "পেশাদার সেবা",
     "health-wellness": "স্বাস্থ্য ও সুস্থতা",
     "animal-agriculture": "পশু ও কৃষি"
+  },
+  "provider": {
+    "available": "উপলব্ধ এখন",
+    "busy": "ব্যস্ত",
+    "offline": "অফলাইন",
+    "call_now": "কল করুন",
+    "years_exp": "বছরের অভিজ্ঞতা",
+    "jobs_done": "সম্পন্ন কাজ",
+    "member_since": "সদস্য থেকে",
+    "visit_charge": "ভিজিট চার্জ",
+    "price_note": "চূড়ান্ত মূল্য কাজের ধরনের উপর নির্ভর করবে",
+    "service_prices": "আনুমানিক সার্ভিস মূল্য",
+    "see_all_services": "আরও {{count}} টি সার্ভিস দেখুন",
+    "working_hours": "কাজের সময়সূচী",
+    "see_all_hours": "সব সময়সূচী দেখুন",
+    "today_label": "আজ",
+    "day_closed": "বন্ধ",
+    "service_areas": "সার্ভিস এরিয়া",
+    "show_more_areas": "আরও {{count}} টি এলাকা",
+    "show_less": "কম দেখুন",
+    "about": "আমার সম্পর্কে",
+    "read_more": "আরও পড়ুন",
+    "show_less_bio": "কম দেখুন",
+    "recent_work": "সাম্প্রতিক কাজের ছবি",
+    "see_all_photos": "সব ছবি দেখুন",
+    "not_found_title": "প্রোফাইল পাওয়া যায়নি",
+    "not_found_sub": "এই সেবাদাতা বিদ্যমান নেই",
+    "browse_services": "সেবা দেখুন",
+    "provider_tag": "সেবাদাতা",
+    "today_active": "আজ সক্রিয়"
   }
 }
