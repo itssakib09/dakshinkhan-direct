@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -12,49 +13,67 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-
+    
+    // Admins collection
+    match /admins/{adminUid} {
+      allow read: if isOwner(adminUid) || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Users - FIXED FOR DISCOVERY PAGES
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      // Allow anyone to read users who completed onboarding (public business/service profiles)
+      allow read: if resource.data.onboardingComplete == true || isOwner(userId) || isAdmin();
+      
+      // Allow user to write their own document
+      allow write: if isOwner(userId) || isAdmin();
+      
+      // Allow creation during signup
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
     }
-
+    
+    // Listings
     match /listings/{listingId} {
       allow read: if true;
-      allow create: if isAuthenticated() && 
-                      request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAuthenticated() && 
-                      (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow delete: if isAuthenticated() && 
-                      (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.ownerId == request.auth.uid || isAdmin());
     }
-
+    
+    // Analytics
     match /analytics/{userId}/{document=**} {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId) || isAdmin();
     }
-
+    
+    // Catalog (categories) - read public, write admin only
     match /catalog/{catalogId} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
+    // Catalog Products - read public, write admin only
     match /catalogProducts/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    match /payments/{paymentId} {
-      allow read: if isAuthenticated() && 
-                    (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isAuthenticated() && 
-                     request.resource.data.userId == request.auth.uid;
+    
+    // Settings (sponsored ad, site config)
+match /settings/{settingId} {
+  allow read: if true;
+  allow write: if isAdmin();
+}
+    
+    // Audit Logs - admin only, no client-side delete
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
     }
-
+    
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }

@@ -11,6 +11,7 @@ export const BUSINESS_TYPES = [
     label: 'Food & Dining',
     subcategories: [
       'Restaurant',
+      'Hotel',
       'Fast Food Shop',
       'Cafe & Coffee Shop',
       'Tea Stall',

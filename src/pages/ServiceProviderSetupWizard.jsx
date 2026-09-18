@@ -1,3 +1,4 @@
+// src/pages/ServiceProviderSetupWizard.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -5,10 +6,9 @@ import { useAuth } from '../context/AuthContext'
 import { getUserProfile, updateUserProfile } from '../services/userService'
 import WizardLayout from '../components/onboarding/WizardLayout'
 import ServiceStepBasicInfo from '../components/onboarding/ServiceStepBasicInfo'
-import ServiceStepCoverPhoto from '../components/onboarding/ServiceStepCoverPhoto'
 import ServiceStepServices from '../components/onboarding/ServiceStepServices'
-import ServiceStepAreas from '../components/onboarding/ServiceStepAreas'
-import ServiceStepAvailability from '../components/onboarding/ServiceStepAvailability'
+import ServiceStepProfessionalInfo from '../components/onboarding/ServiceStepProfessionalInfo'
+import ServiceStepAreasAvailability from '../components/onboarding/ServiceStepAreasAvailability'
 import ServiceStepFinish from '../components/onboarding/ServiceStepFinish'
 
 function ServiceProviderSetupWizard() {
@@ -23,16 +23,24 @@ function ServiceProviderSetupWizard() {
     phone: '',
     profession: '',
     coverPhoto: '',
+    profilePhoto: '',
     servicesOffered: [],
     coverageAreas: [],
+    visitCharge: '',
+    experience: '',
+    completedJobs: '',
+    responseTime: '',
     availability: {
-      monday: { available: true, hours: '9 AM - 6 PM' },
-      tuesday: { available: true, hours: '9 AM - 6 PM' },
-      wednesday: { available: true, hours: '9 AM - 6 PM' },
-      thursday: { available: true, hours: '9 AM - 6 PM' },
-      friday: { available: true, hours: '9 AM - 6 PM' },
-      saturday: { available: true, hours: '9 AM - 6 PM' },
-      sunday: { available: false, hours: 'Closed' },
+      availableNow: true,
+      schedule: {
+        monday: { open: '09:00', close: '18:00', closed: false },
+        tuesday: { open: '09:00', close: '18:00', closed: false },
+        wednesday: { open: '09:00', close: '18:00', closed: false },
+        thursday: { open: '09:00', close: '18:00', closed: false },
+        friday: { open: '09:00', close: '18:00', closed: false },
+        saturday: { open: '09:00', close: '18:00', closed: false },
+        sunday: { open: '09:00', close: '18:00', closed: true },
+      }
     }
   })
 
@@ -77,7 +85,7 @@ function ServiceProviderSetupWizard() {
     checkOnboarding()
   }, [currentUser, navigate])
 
-  const totalSteps = 6
+  const totalSteps = 5
 
   const updateFormData = (updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
@@ -95,49 +103,43 @@ function ServiceProviderSetupWizard() {
     }
   }
 
-  const computeAvailableNow = (schedule) => {
-    if (!schedule) return false
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const today = dayNames[new Date().getDay()]
-    const todaySchedule = schedule[today]
-    if (!todaySchedule) return false
-    return todaySchedule.available === true
-  }
-
   const handleFinish = async () => {
     try {
       setSaving(true)
 
-      console.log('💾 [Service Wizard] Saving setup data...')
+      console.log('[Service Wizard] Saving setup data...')
       await updateUserProfile(currentUser.uid, {
         displayName: formData.fullName,
+        displayNameLower: formData.fullName.trim().toLowerCase(),
         phone: formData.phone,
         serviceProfile: {
           profession: formData.profession,
+          professionLower: formData.profession.trim().toLowerCase(),
           coverPhoto: formData.coverPhoto,
-          profilePhoto: '',
+          profilePhoto: formData.profilePhoto,
           bio: '',
           servicesOffered: formData.servicesOffered,
-          pricing: [],
           coverageAreas: formData.coverageAreas,
-          availability: {
-            availableNow: computeAvailableNow(formData.availability),
-            schedule: formData.availability
-          }
+          availability: formData.availability,
+          visitCharge: formData.visitCharge,
+          experience: formData.experience,
+          completedJobs: formData.completedJobs,
+          responseTime: formData.responseTime,
+          recentWorkPhotos: [],
         },
         onboardingComplete: true,
       })
 
-      console.log('✅ [Service Wizard] Setup saved to Firestore')
-      
-      console.log('🔄 [Service Wizard] Refreshing AuthContext profile state...')
-      await refreshUserProfile()
-      console.log('✅ [Service Wizard] Profile state refreshed')
+      console.log('[Service Wizard] Setup saved to Firestore')
 
-      console.log('➡️ [Service Wizard] Redirecting to dashboard...')
+      console.log('[Service Wizard] Refreshing AuthContext profile state...')
+      await refreshUserProfile()
+      console.log('[Service Wizard] Profile state refreshed')
+
+      console.log('[Service Wizard] Redirecting to dashboard...')
       navigate('/dashboard')
     } catch (error) {
-      console.error('❌ [Service Wizard] Error completing setup:', error)
+      console.error('[Service Wizard] Error completing setup:', error)
       setSaving(false)
     }
   }
@@ -165,7 +167,7 @@ function ServiceProviderSetupWizard() {
         )
       case 2:
         return (
-          <ServiceStepCoverPhoto
+          <ServiceStepServices
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -174,7 +176,7 @@ function ServiceProviderSetupWizard() {
         )
       case 3:
         return (
-          <ServiceStepServices
+          <ServiceStepProfessionalInfo
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -183,7 +185,7 @@ function ServiceProviderSetupWizard() {
         )
       case 4:
         return (
-          <ServiceStepAreas
+          <ServiceStepAreasAvailability
             formData={formData}
             updateFormData={updateFormData}
             onNext={nextStep}
@@ -191,15 +193,6 @@ function ServiceProviderSetupWizard() {
           />
         )
       case 5:
-        return (
-          <ServiceStepAvailability
-            formData={formData}
-            updateFormData={updateFormData}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
-        )
-      case 6:
         return (
           <ServiceStepFinish
             formData={formData}

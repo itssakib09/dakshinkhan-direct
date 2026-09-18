@@ -1,11 +1,17 @@
+// src/components/dashboard/ServicePublicProfileSection.jsx
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Camera, Upload, Save, X, Plus, Trash2, MapPin, Clock, DollarSign, Briefcase, User } from 'lucide-react'
+import {
+  HiCamera, HiUpload, HiSave, HiX, HiPlus,
+  HiTrash, HiLocationMarker, HiClock,
+  HiBriefcase, HiUser, HiPhotograph, HiClipboardList,
+  HiBadgeCheck
+} from 'react-icons/hi'
 import { useAuth } from '../../context/AuthContext'
 import { updateUserProfile } from '../../services/userService'
 import { uploadImage } from '../../utils/uploadImage'
+import { serverTimestamp } from 'firebase/firestore'
 import { LOCATIONS, ALL_AREAS_VALUE, ALL_AREAS_LABEL } from '../../data/locations'
-import { SERVICE_CATEGORIES } from '../../data/serviceTypes'
 import { WEEK_DAYS, DAY_LABELS } from '../../data/storeHours'
 
 function ServicePublicProfileSection() {
@@ -13,11 +19,12 @@ function ServicePublicProfileSection() {
   const [saving, setSaving] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingProfile, setUploadingProfile] = useState(false)
+  const [uploadingRecentWork, setUploadingRecentWork] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
-  const [searchService, setSearchService] = useState('')
   const [searchArea, setSearchArea] = useState('')
   const [sameHoursEveryday, setSameHoursEveryday] = useState(true)
+  const [requestingVerification, setRequestingVerification] = useState(false)
 
   const [formData, setFormData] = useState({
     coverPhoto: '',
@@ -25,7 +32,6 @@ function ServicePublicProfileSection() {
     profession: '',
     bio: '',
     servicesOffered: [],
-    pricing: [],
     coverageAreas: [],
     availability: {
       availableNow: true,
@@ -39,17 +45,22 @@ function ServicePublicProfileSection() {
         sunday: { open: '09:00', close: '18:00', closed: false },
       }
     },
-    defaultHours: { open: '09:00', close: '18:00' }
+    defaultHours: { open: '09:00', close: '18:00' },
+    visitCharge: '',
+    experience: '',
+    completedJobs: '',
+    responseTime: '',
+    recentWorkPhotos: [],
   })
 
   useEffect(() => {
     if (userProfile?.serviceProfile) {
       const profile = userProfile.serviceProfile
-      
+
       // Initialize availability with proper structure
       let availability = {
-        availableNow: profile.availability?.availableNow !== undefined 
-          ? profile.availability.availableNow 
+        availableNow: profile.availability?.availableNow !== undefined
+          ? profile.availability.availableNow
           : true,
         schedule: {}
       }
@@ -58,7 +69,7 @@ function ServicePublicProfileSection() {
       WEEK_DAYS.forEach(day => {
         if (profile.availability?.schedule?.[day]) {
           const daySchedule = profile.availability.schedule[day]
-          
+
           // Handle both old format (hours string) and new format (open/close)
           if (daySchedule.open && daySchedule.close) {
             availability.schedule[day] = {
@@ -97,11 +108,19 @@ function ServicePublicProfileSection() {
         profilePhoto: profile.profilePhoto || '',
         profession: profile.profession || '',
         bio: profile.bio || '',
-        servicesOffered: profile.servicesOffered || [],
-        pricing: profile.pricing || [],
+        servicesOffered: (profile.servicesOffered || []).map(s =>
+          typeof s === 'string'
+            ? { name: s, priceFrom: '', priceTo: '' }
+            : s
+        ),
         coverageAreas: profile.coverageAreas || [],
         availability: availability,
-        defaultHours: profile.defaultHours || { open: '09:00', close: '18:00' }
+        defaultHours: profile.defaultHours || { open: '09:00', close: '18:00' },
+        visitCharge: profile.visitCharge || '',
+        experience: profile.experience || '',
+        completedJobs: profile.completedJobs || '',
+        responseTime: profile.responseTime || '',
+        recentWorkPhotos: profile.recentWorkPhotos || [],
       })
     }
   }, [userProfile])
@@ -109,20 +128,20 @@ function ServicePublicProfileSection() {
   // Helper function to convert 12-hour format to 24-hour
   const convertTo24Hour = (timeStr) => {
     if (!timeStr) return null
-    
+
     const match = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)/i)
     if (!match) return null
-    
+
     let hours = parseInt(match[1])
     const minutes = match[2] || '00'
     const period = match[3].toUpperCase()
-    
+
     if (period === 'PM' && hours !== 12) {
       hours += 12
     } else if (period === 'AM' && hours === 12) {
       hours = 0
     }
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`
   }
 
@@ -132,9 +151,7 @@ function ServicePublicProfileSection() {
       try {
         setUploadingCover(true)
         setError(null)
-        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/cover/`, (progress) => {
-          console.log(`Cover photo upload: ${progress.toFixed(0)}%`)
-        })
+        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/cover/`, () => {})
         setFormData(prev => ({ ...prev, coverPhoto: url }))
       } catch (error) {
         console.error('Error uploading cover photo:', error)
@@ -151,9 +168,7 @@ function ServicePublicProfileSection() {
       try {
         setUploadingProfile(true)
         setError(null)
-        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/profile/`, (progress) => {
-          console.log(`Profile photo upload: ${progress.toFixed(0)}%`)
-        })
+        const url = await uploadImage(file, `service-profiles/${currentUser.uid}/profile/`, () => {})
         setFormData(prev => ({ ...prev, profilePhoto: url }))
       } catch (error) {
         console.error('Error uploading profile photo:', error)
@@ -164,35 +179,62 @@ function ServicePublicProfileSection() {
     }
   }
 
-  const toggleService = (service) => {
+  const handleRecentWorkUpload = async (e) => {
+    const files = Array.from(e.target.files)
+    if (files.length === 0) return
+
+    setUploadingRecentWork(true)
+    setError(null)
+    try {
+      const urls = await Promise.all(
+        files.map(file => uploadImage(
+          file,
+          `service-profiles/${currentUser.uid}/work/`,
+          () => {}
+        ))
+      )
+      setFormData(prev => ({
+        ...prev,
+        recentWorkPhotos: [...prev.recentWorkPhotos, ...urls].slice(0, 12)
+      }))
+    } catch (error) {
+      console.error('Error uploading work photos:', error)
+      setError('Failed to upload photos')
+    } finally {
+      setUploadingRecentWork(false)
+    }
+  }
+
+  const removeRecentWorkPhoto = (index) => {
     setFormData(prev => ({
       ...prev,
-      servicesOffered: prev.servicesOffered.includes(service)
-        ? prev.servicesOffered.filter(s => s !== service)
-        : [...prev.servicesOffered, service]
+      recentWorkPhotos: prev.recentWorkPhotos.filter((_, i) => i !== index)
     }))
   }
 
-  const addPricing = () => {
+  const addService = () => {
     setFormData(prev => ({
       ...prev,
-      pricing: [...prev.pricing, { name: '', price: 0 }]
+      servicesOffered: [
+        ...prev.servicesOffered,
+        { name: '', priceFrom: '', priceTo: '' }
+      ]
     }))
   }
 
-  const updatePricing = (index, field, value) => {
+  const updateService = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      pricing: prev.pricing.map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
+      servicesOffered: prev.servicesOffered.map((s, i) =>
+        i === index ? { ...s, [field]: value } : s
       )
     }))
   }
 
-  const removePricing = (index) => {
+  const removeService = (index) => {
     setFormData(prev => ({
       ...prev,
-      pricing: prev.pricing.filter((_, i) => i !== index)
+      servicesOffered: prev.servicesOffered.filter((_, i) => i !== index)
     }))
   }
 
@@ -263,11 +305,16 @@ function ServicePublicProfileSection() {
           coverPhoto: formData.coverPhoto,
           profilePhoto: formData.profilePhoto,
           profession: formData.profession,
+          professionLower: formData.profession.trim().toLowerCase(),
           bio: formData.bio,
           servicesOffered: formData.servicesOffered,
-          pricing: formData.pricing,
           coverageAreas: formData.coverageAreas,
-          availability: formData.availability
+          availability: formData.availability,
+          visitCharge: formData.visitCharge,
+          experience: formData.experience,
+          completedJobs: formData.completedJobs,
+          responseTime: formData.responseTime,
+          recentWorkPhotos: formData.recentWorkPhotos,
         }
       })
 
@@ -282,13 +329,34 @@ function ServicePublicProfileSection() {
     }
   }
 
-  const filteredServices = SERVICE_CATEGORIES.filter(service =>
-    service.toLowerCase().includes(searchService.toLowerCase())
-  )
+  const handleRequestVerification = async () => {
+    setRequestingVerification(true)
+    setError(null)
+
+    try {
+      await updateUserProfile(currentUser.uid, {
+        'serviceProfile.verificationRequested': true,
+        'serviceProfile.verificationRequestedAt': serverTimestamp(),
+        'serviceProfile.verificationRejected': false
+      })
+
+      await refreshUserProfile()
+    } catch (error) {
+      console.error('Error requesting verification:', error)
+      setError('Failed to submit verification request. Please try again.')
+    } finally {
+      setRequestingVerification(false)
+    }
+  }
 
   const filteredAreas = LOCATIONS.filter(area =>
     area.toLowerCase().includes(searchArea.toLowerCase())
   )
+
+  const isVerified = userProfile?.serviceProfile?.verified === true
+  const isVerificationRequested = userProfile?.serviceProfile?.verificationRequested === true
+  const isVerificationRejected = userProfile?.serviceProfile?.verificationRejected === true
+  const verificationRejectedReason = userProfile?.serviceProfile?.verificationRejectedReason || ''
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -311,7 +379,60 @@ function ServicePublicProfileSection() {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <Camera className="text-primary-600 dark:text-primary-400" size={20} />
+            <HiBadgeCheck className="text-primary-600 dark:text-primary-400" size={20} />
+            <h3 className="font-black text-lg text-gray-900 dark:text-white">Verification</h3>
+          </div>
+
+          {isVerified ? (
+            <span className="inline-flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full px-4 py-2 text-sm font-bold">
+              <HiBadgeCheck size={16} />
+              Verified
+            </span>
+          ) : isVerificationRequested ? (
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full px-4 py-2 text-sm font-bold">
+              <HiClock size={16} />
+              Verification Pending
+            </span>
+          ) : isVerificationRejected ? (
+            <div>
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 mb-3">
+                <p className="font-bold text-sm mb-1">Verification request declined</p>
+                <p className="text-sm">{verificationRejectedReason || 'No reason provided'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRequestVerification}
+                disabled={requestingVerification}
+                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+              >
+                {requestingVerification ? 'Submitting...' : 'Request Verification Again'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                Get a verified badge to build customer trust
+              </p>
+              <button
+                type="button"
+                onClick={handleRequestVerification}
+                disabled={requestingVerification}
+                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+              >
+                {requestingVerification ? 'Submitting...' : 'Request Verification'}
+              </button>
+            </div>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <HiCamera className="text-primary-600 dark:text-primary-400" size={20} />
             <h3 className="font-black text-lg text-gray-900 dark:text-white">Photos</h3>
           </div>
 
@@ -325,7 +446,7 @@ function ServicePublicProfileSection() {
                   <img src={formData.coverPhoto} alt="Cover" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                    <Upload size={48} />
+                    <HiUpload size={48} />
                   </div>
                 )}
                 {uploadingCover ? (
@@ -335,7 +456,7 @@ function ServicePublicProfileSection() {
                   </div>
                 ) : (
                   <label className="absolute bottom-4 right-4 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl cursor-pointer shadow-lg transition-all">
-                    <Camera size={20} />
+                    <HiCamera size={20} />
                     <input
                       type="file"
                       accept="image/*"
@@ -358,7 +479,7 @@ function ServicePublicProfileSection() {
                     <img src={formData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                      <User size={32} />
+                      <HiUser size={32} />
                     </div>
                   )}
                   {uploadingProfile && (
@@ -369,7 +490,7 @@ function ServicePublicProfileSection() {
                 </div>
                 {!uploadingProfile && (
                   <label className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl cursor-pointer shadow-lg transition-all flex items-center gap-2">
-                    <Camera size={18} />
+                    <HiCamera size={18} />
                     Upload Photo
                     <input
                       type="file"
@@ -395,7 +516,7 @@ function ServicePublicProfileSection() {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <Briefcase className="text-primary-600 dark:text-primary-400" size={20} />
+            <HiBriefcase className="text-primary-600 dark:text-primary-400" size={20} />
             <h3 className="font-black text-lg text-gray-900 dark:text-white">Basic Info</h3>
           </div>
 
@@ -435,42 +556,124 @@ function ServicePublicProfileSection() {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <Briefcase className="text-primary-600 dark:text-primary-400" size={20} />
-            <h3 className="font-black text-lg text-gray-900 dark:text-white">Services Offered</h3>
+            <HiBriefcase className="text-primary-600 dark:text-primary-400" size={20} />
+            <h3 className="font-black text-lg text-gray-900 dark:text-white">Professional Info</h3>
           </div>
 
-          <input
-            type="text"
-            value={searchService}
-            onChange={(e) => setSearchService(e.target.value)}
-            placeholder="Search services..."
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all mb-4"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Visit Charge (৳)
+              </label>
+              <input
+                type="number"
+                value={formData.visitCharge}
+                onChange={(e) => setFormData(prev => ({ ...prev, visitCharge: e.target.value }))}
+                placeholder="e.g. 300"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+              />
+            </div>
 
-          <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filteredServices.map(service => (
-                <motion.button
-                  key={service}
-                  type="button"
-                  onClick={() => toggleService(service)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    formData.servicesOffered.includes(service)
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {service}
-                </motion.button>
-              ))}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Years of Experience
+              </label>
+              <input
+                type="number"
+                value={formData.experience}
+                onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+                placeholder="e.g. 5"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Completed Jobs
+              </label>
+              <input
+                type="number"
+                value={formData.completedJobs}
+                onChange={(e) => setFormData(prev => ({ ...prev, completedJobs: e.target.value }))}
+                placeholder="e.g. 150"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Typical Response Time
+              </label>
+              <input
+                type="text"
+                value={formData.responseTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, responseTime: e.target.value }))}
+                placeholder="e.g. Usually responds within 30 minutes"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+              />
             </div>
           </div>
+        </motion.div>
 
-          {formData.servicesOffered.length > 0 && (
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-              Selected: <span className="font-bold text-primary-600 dark:text-primary-400">{formData.servicesOffered.length}</span> services
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <HiClipboardList className="text-primary-600 dark:text-primary-400" size={20} />
+              <h3 className="font-black text-lg text-gray-900 dark:text-white">Services & Prices</h3>
+            </div>
+            <button
+              type="button"
+              onClick={addService}
+              className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-sm font-semibold"
+            >
+              <HiPlus size={16} />
+              Add Service
+            </button>
+          </div>
+
+          {formData.servicesOffered.length > 0 ? (
+            <div className="space-y-2">
+              {formData.servicesOffered.map((service, index) => (
+                <div key={index} className="flex gap-2 items-center mb-2">
+                  <input
+                    type="text"
+                    value={service.name}
+                    onChange={(e) => updateService(index, 'name', e.target.value)}
+                    placeholder="Service name e.g. Leak Repair"
+                    className="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                  />
+                  <input
+                    type="number"
+                    value={service.priceFrom}
+                    onChange={(e) => updateService(index, 'priceFrom', e.target.value)}
+                    placeholder="৳ Min"
+                    className="w-24 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                  />
+                  <input
+                    type="number"
+                    value={service.priceTo}
+                    onChange={(e) => updateService(index, 'priceTo', e.target.value)}
+                    placeholder="৳ Max"
+                    className="w-24 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeService(index)}
+                    className="p-2"
+                  >
+                    <HiTrash size={16} className="text-red-500 dark:text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+              No services added yet. Click "Add Service" to list what you offer.
             </p>
           )}
         </motion.div>
@@ -483,54 +686,41 @@ function ServicePublicProfileSection() {
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="text-primary-600 dark:text-primary-400" size={20} />
-              <h3 className="font-black text-lg text-gray-900 dark:text-white">Pricing (Optional)</h3>
+              <HiPhotograph className="text-primary-600 dark:text-primary-400" size={20} />
+              <h3 className="font-black text-lg text-gray-900 dark:text-white">Recent Work Photos</h3>
             </div>
-            <motion.button
-              type="button"
-              onClick={addPricing}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-all"
-            >
-              <Plus size={18} />
-              Add
-            </motion.button>
+            <label className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold cursor-pointer">
+              <HiCamera size={16} />
+              {uploadingRecentWork ? 'Uploading...' : 'Add Photos'}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleRecentWorkUpload}
+                disabled={uploadingRecentWork || formData.recentWorkPhotos.length >= 12}
+                className="hidden"
+              />
+            </label>
           </div>
 
-          {formData.pricing.length > 0 ? (
-            <div className="space-y-3">
-              {formData.pricing.map((item, index) => (
-                <div key={index} className="flex gap-3 items-start">
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) => updatePricing(index, 'name', e.target.value)}
-                    placeholder="Service name"
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  />
-                  <input
-                    type="number"
-                    value={item.price}
-                    onChange={(e) => updatePricing(index, 'price', parseFloat(e.target.value) || 0)}
-                    placeholder="Price"
-                    className="w-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  />
-                  <motion.button
+          {formData.recentWorkPhotos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {formData.recentWorkPhotos.map((photo, index) => (
+                <div key={index} className="relative rounded-xl overflow-hidden aspect-square">
+                  <img src={photo} alt={`Work ${index + 1}`} className="w-full h-full object-cover" />
+                  <button
                     type="button"
-                    onClick={() => removePricing(index)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-all"
+                    onClick={() => removeRecentWorkPhoto(index)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 dark:bg-red-600 rounded-full flex items-center justify-center"
                   >
-                    <Trash2 size={18} />
-                  </motion.button>
+                    <HiX size={12} className="text-white" />
+                  </button>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-              No pricing added yet. Click "Add" to include service prices.
+              No work photos added yet. Add up to 12 photos to showcase your work.
             </p>
           )}
         </motion.div>
@@ -538,14 +728,14 @@ function ServicePublicProfileSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.5 }}
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <MapPin className="text-primary-600 dark:text-primary-400" size={20} />
+            <HiLocationMarker className="text-primary-600 dark:text-primary-400" size={20} />
             <h3 className="font-black text-lg text-gray-900 dark:text-white">Coverage Areas</h3>
           </div>
-          
+
           <motion.button
             type="button"
             onClick={() => toggleArea(ALL_AREAS_VALUE)}
@@ -559,7 +749,7 @@ function ServicePublicProfileSection() {
           >
             {ALL_AREAS_LABEL}
           </motion.button>
-          
+
           <input
             type="text"
             value={searchArea}
@@ -567,7 +757,7 @@ function ServicePublicProfileSection() {
             placeholder="Search areas..."
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white transition-all mb-4"
           />
-          
+
           <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {filteredAreas.map(area => (
@@ -589,7 +779,7 @@ function ServicePublicProfileSection() {
               ))}
             </div>
           </div>
-          
+
           {formData.coverageAreas.length > 0 && !formData.coverageAreas.includes(ALL_AREAS_VALUE) && (
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               Selected: <span className="font-bold text-primary-600 dark:text-primary-400">{formData.coverageAreas.length}</span> areas
@@ -600,14 +790,14 @@ function ServicePublicProfileSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="text-primary-600 dark:text-primary-400" size={20} />
+            <HiClock className="text-primary-600 dark:text-primary-400" size={20} />
             <h3 className="font-black text-lg text-gray-900 dark:text-white">Availability</h3>
           </div>
-          
+
           <div className="flex items-center justify-between mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
             <div>
               <p className="font-bold text-gray-900 dark:text-white">Available Now</p>
@@ -703,11 +893,11 @@ function ServicePublicProfileSection() {
           type="submit"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          disabled={saving || uploadingCover || uploadingProfile}
+          disabled={saving || uploadingCover || uploadingProfile || uploadingRecentWork}
           className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
         >
-          <Save size={20} />
-          {uploadingCover || uploadingProfile ? 'Uploading Photos...' : saving ? 'Saving Profile...' : 'Save Public Profile'}
+          <HiSave size={20} />
+          {uploadingCover || uploadingProfile || uploadingRecentWork ? 'Uploading Photos...' : saving ? 'Saving Profile...' : 'Save Public Profile'}
         </motion.button>
       </form>
     </div>

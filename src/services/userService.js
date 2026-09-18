@@ -1,3 +1,4 @@
+// src/services/userService.js
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { USE_API, API_URL } from '../config'
@@ -29,11 +30,14 @@ export async function createUserProfile(uid, userData) {
     
     const userRef = doc(db, 'users', uid)
     
+    const rawPhone = userData.phone || ''
     const profileData = {
       uid: uid,
       email: userData.email || '',
       displayName: userData.displayName || '',
-      phone: userData.phone || '',
+      displayNameLower: (userData.displayName || '').trim().toLowerCase(),
+      phone: rawPhone,
+      phoneSearch: rawPhone.replace(/^\+880/, '0'),
       role: userData.role || 'customer',
       photoURL: userData.photoURL || '',
       onboardingComplete: false,

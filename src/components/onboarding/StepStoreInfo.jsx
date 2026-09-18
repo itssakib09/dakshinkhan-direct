@@ -72,7 +72,10 @@ function StepStoreInfo({ formData, updateFormData, onNext }) {
           <input
             type="text"
             value={formData.storeName}
-            onChange={(e) => updateFormData({ storeName: e.target.value })}
+            onChange={(e) => {
+              const value = e.target.value
+              updateFormData({ storeName: value, storeNameLower: value.trim().toLowerCase() })
+            }}
             placeholder="e.g. Dakshinkhan Grocery Store"
             className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
           />

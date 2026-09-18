@@ -395,7 +395,7 @@ function Business() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900 dark:text-white leading-normal line-clamp-2">
-                        {t('subcategories.' + toSubcatKey(subcategory), { defaultValue: subcategory })}
+                        {t('subcategories.' + subcategory, { defaultValue: subcategory })}
                       </p>
                     </div>
                   </div>
@@ -468,7 +468,7 @@ function Business() {
           <div className="mb-4">
             <h1 className="text-xl font-black text-gray-900 dark:text-white mb-0.5">
               {selectedCategory
-                ? t('subcategories.' + toSubcatKey(selectedCategory), { defaultValue: selectedCategory })
+                ? t('subcategories.' + selectedCategory, { defaultValue: selectedCategory })
                 : t('business.discover_title')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -614,7 +614,7 @@ function Business() {
               )}
               {selectedCategory && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                  {t('subcategories.' + toSubcatKey(selectedCategory), { defaultValue: selectedCategory })}
+                  {t('subcategories.' + selectedCategory, { defaultValue: selectedCategory })}
                   <button onClick={() => setSelectedCategory('')}>
                     <HiX size={14} />
                   </button>
@@ -739,7 +739,7 @@ function Business() {
                           <div className="space-y-0.5 mt-1">
                             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
                               {storeSettings.businessType
-                                ? t('subcategories.' + toSubcatKey(storeSettings.businessType), { defaultValue: storeSettings.businessType })
+                                ? t('subcategories.' + storeSettings.businessType, { defaultValue: storeSettings.businessType })
                                 : ''}
                             </p>
                             <div className="flex items-center gap-1">

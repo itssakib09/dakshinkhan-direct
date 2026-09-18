@@ -1,13 +1,21 @@
 // src/components/onboarding/ServiceStepBasicInfo.jsx
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Phone, Briefcase, Tag, Search, ArrowRight, ChevronLeft } from 'lucide-react'
+import {
+  HiUser, HiPhone, HiTag, HiSearch, HiArrowRight, HiChevronLeft,
+  HiCamera, HiPhotograph
+} from 'react-icons/hi'
+import { useAuth } from '../../context/AuthContext'
+import { uploadImage } from '../../utils/uploadImage'
 import { SERVICE_CATEGORIES } from '../../data/serviceTypes'
 
 function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
+  const { currentUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [error, setError] = useState('')
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingProfile, setUploadingProfile] = useState(false)
 
   const handleCategorySelect = (cat) => {
     setSelectedCategory(cat)
@@ -16,12 +24,48 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
   }
 
   const handleSubcategorySelect = (sub) => {
-    updateFormData({ subcategory: sub })
+    updateFormData({ subcategory: sub, profession: sub })
   }
 
   const handleBack = () => {
     setSelectedCategory(null)
     updateFormData({ serviceCategory: '', subcategory: '' })
+  }
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingCover(true)
+    try {
+      const url = await uploadImage(
+        file,
+        `service-profiles/${currentUser.uid}/cover/`,
+        () => {}
+      )
+      updateFormData({ coverPhoto: url })
+    } catch (err) {
+      console.error('Cover upload error:', err)
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+
+  const handleProfileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingProfile(true)
+    try {
+      const url = await uploadImage(
+        file,
+        `service-profiles/${currentUser.uid}/profile/`,
+        () => {}
+      )
+      updateFormData({ profilePhoto: url })
+    } catch (err) {
+      console.error('Profile upload error:', err)
+    } finally {
+      setUploadingProfile(false)
+    }
   }
 
   const handleNext = () => {
@@ -34,15 +78,11 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
       return
     }
     if (!formData.serviceCategory) {
-      setError('Please select a service category')
+      setError('Please select your profession category')
       return
     }
     if (!formData.subcategory) {
-      setError('Please select a service type')
-      return
-    }
-    if (!formData.profession.trim()) {
-      setError('Please enter your display title')
+      setError('Please select your profession')
       return
     }
     setError('')
@@ -70,11 +110,75 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
         </p>
       </div>
 
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <HiPhotograph size={18} className="text-primary-600 dark:text-primary-400" />
+          <span className="text-sm font-black text-gray-900 dark:text-white">Photos</span>
+        </div>
+
+        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 block">
+          Cover Photo (optional)
+        </label>
+        <div className="relative h-32 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 mb-4">
+          {formData.coverPhoto ? (
+            <img
+              src={formData.coverPhoto}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <HiPhotograph size={32} className="text-gray-300 dark:text-gray-600" />
+            </div>
+          )}
+          <label className="absolute bottom-2 right-2 bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-lg cursor-pointer shadow-md">
+            {uploadingCover ? (
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+            ) : (
+              <HiCamera size={16} />
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+          </label>
+        </div>
+
+        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 block">
+          Profile Photo (optional)
+        </label>
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+            {formData.profilePhoto ? (
+              <img
+                src={formData.profilePhoto}
+                alt=""
+                className="w-full h-full object-cover"
+                onError={(e) => { e.target.style.display = 'none' }}
+              />
+            ) : (
+              <HiUser size={28} className="text-gray-300 dark:text-gray-600" />
+            )}
+          </div>
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold cursor-pointer shadow-sm">
+            {uploadingProfile ? (
+              <>
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <HiCamera size={16} />
+                Upload Photo
+              </>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
+          </label>
+        </div>
+      </div>
+
       <div className="space-y-6">
-        {/* Full Name */}
         <div>
           <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-            <User size={18} className="text-primary-600 dark:text-primary-400" />
+            <HiUser size={18} className="text-primary-600 dark:text-primary-400" />
             Full Name
           </label>
           <input
@@ -86,10 +190,9 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
           />
         </div>
 
-        {/* Phone */}
         <div>
           <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-            <Phone size={18} className="text-primary-600 dark:text-primary-400" />
+            <HiPhone size={18} className="text-primary-600 dark:text-primary-400" />
             Phone Number
           </label>
           <input
@@ -101,17 +204,15 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
           />
         </div>
 
-        {/* Service Category Picker */}
         <div>
           <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-            <Tag size={18} className="text-primary-600 dark:text-primary-400" />
-            Service Type
+            <HiTag size={18} className="text-primary-600 dark:text-primary-400" />
+            Your Profession
           </label>
 
-          {/* Search Bar */}
           <div className="mb-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
+              <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input
                 type="text"
                 value={searchQuery}
@@ -122,16 +223,13 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
             </div>
           </div>
 
-          {/* Selected Summary */}
           {formData.serviceCategory && formData.subcategory && !isSearching && (
             <p className="mb-2 text-sm text-primary-600 dark:text-primary-400 font-medium">
-              Selected: {formData.serviceCategory} &gt; {formData.subcategory}
+              Selected: {formData.subcategory}
             </p>
           )}
 
           <div className="max-h-72 overflow-y-auto border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700">
-
-            {/* Search Results View */}
             {isSearching && (
               <div className="p-3">
                 {searchResults.length === 0 ? (
@@ -157,7 +255,7 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
                                 key={sub}
                                 type="button"
                                 onClick={() => {
-                                  updateFormData({ serviceCategory: cat.label, subcategory: sub })
+                                  updateFormData({ serviceCategory: cat.label, subcategory: sub, profession: sub })
                                   setSelectedCategory(cat)
                                   setSearchQuery('')
                                 }}
@@ -179,7 +277,6 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
               </div>
             )}
 
-            {/* Category View */}
             {!isSearching && !selectedCategory && (
               <div className="p-3 grid grid-cols-2 gap-2">
                 {SERVICE_CATEGORIES.map((cat) => (
@@ -199,7 +296,6 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
               </div>
             )}
 
-            {/* Subcategory View */}
             {!isSearching && selectedCategory && (
               <div className="p-3">
                 <button
@@ -207,7 +303,7 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
                   onClick={handleBack}
                   className="flex items-center gap-1 text-sm font-semibold text-primary-600 dark:text-primary-400 mb-3 min-h-[44px]"
                 >
-                  <ChevronLeft size={16} />
+                  <HiChevronLeft size={16} />
                   Back to categories
                 </button>
                 <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">
@@ -237,24 +333,6 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
           </div>
         </div>
 
-        {/* Display Title */}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-            <Briefcase size={18} className="text-primary-600 dark:text-primary-400" />
-            Your Display Title
-          </label>
-          <input
-            type="text"
-            value={formData.profession}
-            onChange={(e) => updateFormData({ profession: e.target.value })}
-            placeholder="e.g. Experienced Math Tutor, Expert Plumber"
-            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
-          />
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            This appears as your title on your public profile
-          </p>
-        </div>
-
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
             <p className="text-sm font-semibold">{error}</p>
@@ -268,7 +346,7 @@ function ServiceStepBasicInfo({ formData, updateFormData, onNext }) {
           className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all"
         >
           Continue
-          <ArrowRight size={20} />
+          <HiArrowRight size={20} />
         </motion.button>
       </div>
     </div>

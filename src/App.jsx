@@ -9,6 +9,8 @@ import { AnimatePresence } from 'framer-motion'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/PrivateRoute'
 import PageTransition from './components/PageTransition'
+import AdminRoute from './components/admin/AdminRoute'
+import AdminLayout from './layouts/AdminLayout'
 
 // Lazy load pages
 import { lazy, Suspense } from 'react'
@@ -22,7 +24,6 @@ const Signup = lazy(() => import('./pages/Signup'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const BusinessSetupWizard = lazy(() => import('./pages/BusinessSetupWizard'))
 const Store = lazy(() => import('./pages/Store'))
-const Admin = lazy(() => import('./pages/Admin'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
 const ComponentDemo = lazy(() => import('./pages/ComponentDemo'))
@@ -34,6 +35,16 @@ const Business = lazy(() => import('./pages/Business'))
 const Services = lazy(() => import('./pages/Services'))
 const ServiceProvider = lazy(() => import('./pages/ServiceProvider'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminBusinesses = lazy(() => import('./pages/admin/AdminBusinesses'))
+const AdminServiceProviders = lazy(() => import('./pages/admin/AdminServiceProviders'))
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminVerification = lazy(() => import('./pages/admin/AdminVerification'))
+const AdminCatalog = lazy(() => import('./pages/admin/AdminCatalog'))
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
+const AdminLocations = lazy(() => import('./pages/admin/AdminLocations'))
+const AdminSponsoredAds = lazy(() => import('./pages/admin/AdminSponsoredAds'))
+const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -161,21 +172,37 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="admin"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
-                  <PageTransition><Admin /></PageTransition>
-                </Suspense>
-              </ProtectedRoute>
-            }
-          />
           <Route path="*" element={
             <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
               <PageTransition><NotFound /></PageTransition>
             </Suspense>
           } />
+        </Route>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route
+            index
+            element={
+              <Suspense fallback={<div className="p-6"><SkeletonCard /></div>}>
+                <AdminDashboard />
+              </Suspense>
+            }
+          />
+          <Route path="businesses" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminBusinesses /></Suspense>} />
+          <Route path="providers" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminServiceProviders /></Suspense>} />
+          <Route path="users" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminUsers /></Suspense>} />
+          <Route path="verification" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminVerification /></Suspense>} />
+          <Route path="catalog" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminCatalog /></Suspense>} />
+          <Route path="categories" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminCategories /></Suspense>} />
+          <Route path="locations" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminLocations /></Suspense>} />
+          <Route path="ads" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminSponsoredAds /></Suspense>} />
+          <Route path="logs" element={<Suspense fallback={<div className="p-6"><SkeletonCard /></div>}><AdminAuditLogs /></Suspense>} />
         </Route>
       </Routes>
     </AnimatePresence>

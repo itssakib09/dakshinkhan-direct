@@ -77,6 +77,14 @@ function groupHours(schedule, todayKey) {
   return groups
 }
 
+const RESPONSE_TIME_LABELS = {
+  within_15_min: { bn: '১৫ মিনিটে সাড়া', en: '15 min response' },
+  within_30_min: { bn: '৩০ মিনিটে সাড়া', en: '30 min response' },
+  within_1_hour: { bn: '১ ঘণ্টায় সাড়া', en: '1 hr response' },
+  within_2_3_hours: { bn: '২-৩ ঘণ্টায় সাড়া', en: '2-3 hr response' },
+  same_day: { bn: 'একই দিনে সাড়া', en: 'Same day response' },
+}
+
 function ServiceProvider() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -90,6 +98,7 @@ function ServiceProvider() {
   const [showAllAreas, setShowAllAreas] = useState(false)
   const [showFullBio, setShowFullBio] = useState(false)
   const [showAllHours, setShowAllHours] = useState(false)
+  const [showAllServices, setShowAllServices] = useState(false)
   const [previewType, setPreviewType] = useState(null)
 
   const jsToWeekDay = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
@@ -333,39 +342,20 @@ function ServiceProvider() {
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-3 flex-wrap mb-4 text-sm text-gray-500 dark:text-gray-400">
-            {responseTime && (
-              <span>{t('provider.today_active', { defaultValue: 'Active today' })} &bull; {responseTime}</span>
+          <div className="flex items-center justify-center gap-3 flex-wrap mb-4 text-xs text-gray-500 dark:text-gray-400">
+            {responseTime && RESPONSE_TIME_LABELS[responseTime] && (
+              <span>{RESPONSE_TIME_LABELS[responseTime][lang]}</span>
+            )}
+            {responseTime && coverageAreas?.[0] && (
+              <span className="text-gray-300 dark:text-gray-600">&bull;</span>
             )}
             {coverageAreas?.[0] && (
               <span className="flex items-center gap-1">
-                <HiLocationMarker size={14} className="text-gray-400 dark:text-gray-500" />
-                {coverageAreas[0]}, Dhaka
+                <HiLocationMarker size={12} className="text-gray-400 dark:text-gray-500" />
+                {coverageAreas[0]}
               </span>
             )}
           </div>
-
-          {(experience || completedJobs) && (
-            <div className="flex items-center justify-center gap-6 py-3 mb-4 border-t border-b border-gray-100 dark:border-gray-700">
-              {experience && (
-                <div className="flex flex-col items-center">
-                  <HiStar size={20} className="text-yellow-500 mb-1" />
-                  <span className="text-xl font-black text-gray-900 dark:text-white">{experience}+</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('provider.years_exp')}</span>
-                </div>
-              )}
-              {experience && completedJobs && (
-                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
-              )}
-              {completedJobs && (
-                <div className="flex flex-col items-center">
-                  <HiCheckCircle size={20} className="text-primary-600 dark:text-primary-400 mb-1" />
-                  <span className="text-xl font-black text-gray-900 dark:text-white">{completedJobs}+</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('provider.jobs_done')}</span>
-                </div>
-              )}
-            </div>
-          )}
 
           {phone && (
             <button
@@ -437,11 +427,11 @@ function ServiceProvider() {
                 {t('provider.service_prices')}
               </span>
             </div>
-            {servicesOffered.slice(0, 5).map((service, i) => (
+            {(showAllServices ? servicesOffered : servicesOffered.slice(0, 5)).map((service, i, arr) => (
               <div
                 key={i}
                 className={`flex justify-between items-center py-2.5 ${
-                  i < Math.min(servicesOffered.length, 5) - 1
+                  i < arr.length - 1
                     ? 'border-b border-gray-50 dark:border-gray-700/50'
                     : ''
                 }`}
@@ -461,9 +451,14 @@ function ServiceProvider() {
               </div>
             ))}
             {servicesOffered.length > 5 && (
-              <button className="mt-3 flex items-center gap-1 text-primary-600 dark:text-primary-400 text-sm font-semibold">
-                {t('provider.see_all_services', { count: servicesOffered.length })}
-                <HiChevronRight size={16} />
+              <button
+                onClick={() => setShowAllServices(!showAllServices)}
+                className="mt-3 flex items-center gap-1 text-primary-600 dark:text-primary-400 text-sm font-semibold"
+              >
+                {showAllServices
+                  ? t('provider.show_less')
+                  : t('provider.see_all_services', { count: servicesOffered.length - 5 })}
+                {showAllServices ? <HiChevronUp size={16} /> : <HiChevronDown size={16} />}
               </button>
             )}
             <div className="mt-3 flex items-center gap-1">

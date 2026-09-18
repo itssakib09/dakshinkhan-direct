@@ -1,5 +1,6 @@
+// src/components/onboarding/WizardLayout.jsx
 import { motion } from 'framer-motion'
-import { CheckCircle } from 'lucide-react'
+import { HiCheckCircle } from 'react-icons/hi'
 
 function WizardLayout({ children, currentStep, totalSteps, isService = false }) {
   const businessSteps = [
@@ -11,11 +12,10 @@ function WizardLayout({ children, currentStep, totalSteps, isService = false }) 
 
   const serviceSteps = [
     { number: 1, label: 'Basic Info' },
-    { number: 2, label: 'Cover Photo' },
-    { number: 3, label: 'Services' },
+    { number: 2, label: 'Services' },
+    { number: 3, label: 'Professional Info' },
     { number: 4, label: 'Areas' },
-    { number: 5, label: 'Availability' },
-    { number: 6, label: 'Review' },
+    { number: 5, label: 'Review' },
   ]
 
   const steps = isService ? serviceSteps : businessSteps
@@ -51,7 +51,7 @@ function WizardLayout({ children, currentStep, totalSteps, isService = false }) 
                     }`}
                   >
                     {currentStep > step.number ? (
-                      <CheckCircle size={20} />
+                      <HiCheckCircle size={20} />
                     ) : (
                       step.number
                     )}

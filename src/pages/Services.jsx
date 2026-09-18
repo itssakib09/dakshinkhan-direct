@@ -361,7 +361,7 @@ function Services() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900 dark:text-white leading-normal line-clamp-2">
-                        {subcategory}
+                        {t('services_subcategories.' + subcategory, { defaultValue: subcategory })}
                       </p>
                     </div>
                   </div>
@@ -400,7 +400,9 @@ function Services() {
 
           <div className="mb-4">
             <h1 className="text-xl font-black text-gray-900 dark:text-white mb-0.5">
-              {selectedCategory || t('services.discover_title')}
+              {selectedCategory
+                ? t('services_subcategories.' + selectedCategory, { defaultValue: selectedCategory })
+                : t('services.discover_title')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {t('services.discover_subtitle')}
@@ -545,7 +547,7 @@ function Services() {
               )}
               {selectedCategory && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-bold">
-                  {selectedCategory}
+                  {t('services_subcategories.' + selectedCategory, { defaultValue: selectedCategory })}
                   <button onClick={() => setSelectedCategory('')}>
                     <HiX size={14} />
                   </button>

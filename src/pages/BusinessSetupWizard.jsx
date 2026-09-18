@@ -89,6 +89,7 @@ function BusinessSetupWizard() {
       await updateUserProfile(currentUser.uid, {
         storeSettings: {
           storeName: formData.storeName,
+          storeNameLower: formData.storeName.trim().toLowerCase(),
           storePhone: userProfile?.phone || '',
           businessType: formData.businessType,
           serviceAreas: formData.serviceAreas,

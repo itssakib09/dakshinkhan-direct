@@ -1,5 +1,9 @@
+// src/components/onboarding/ServiceStepFinish.jsx
 import { motion } from 'framer-motion'
-import { CheckCircle, ArrowLeft, User, Briefcase, MapPin, Clock } from 'lucide-react'
+import {
+  HiCheckCircle, HiArrowLeft, HiUser,
+  HiBriefcase, HiLocationMarker, HiClock
+} from 'react-icons/hi'
 import { ALL_AREAS_LABEL, ALL_AREAS_VALUE } from '../../data/locations'
 
 function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
@@ -14,15 +18,20 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
   }
 
   const getAvailableDays = () => {
-    const days = Object.keys(formData.availability).filter(day => formData.availability[day].available)
-    return days.length > 0 ? `${days.length} days per week` : 'Not set'
+    const schedule = formData.availability?.schedule
+    if (!schedule) return 'Not set'
+    const openDays = Object.keys(schedule).filter(
+      day => !schedule[day]?.closed
+    )
+    if (openDays.length === 0) return 'Not set'
+    return `${openDays.length} days per week`
   }
 
   return (
     <div>
       <div className="mb-6 text-center">
         <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="text-primary-600 dark:text-primary-400" size={32} />
+          <HiCheckCircle className="text-primary-600 dark:text-primary-400" size={32} />
         </div>
         <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
           Review & Finish
@@ -35,7 +44,7 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
       <div className="space-y-4 mb-6">
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <User className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
+            <HiUser className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Basic Info</p>
               <p className="text-base font-bold text-gray-900 dark:text-white">{formData.fullName}</p>
@@ -46,7 +55,7 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
 
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <Briefcase className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
+            <HiBriefcase className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Profession</p>
               <p className="text-sm text-gray-900 dark:text-white font-bold">{formData.profession}</p>
@@ -59,7 +68,7 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
 
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <MapPin className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
+            <HiLocationMarker className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Coverage Areas</p>
               <p className="text-sm text-gray-900 dark:text-white">{getAreaDisplay()}</p>
@@ -69,10 +78,15 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
 
         <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <Clock className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
+            <HiClock className="text-primary-600 dark:text-primary-400 mt-1" size={20} />
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Availability</p>
-              <p className="text-sm text-gray-900 dark:text-white">{getAvailableDays()}</p>
+              <p className="text-sm text-gray-900 dark:text-white">
+                {getAvailableDays()}
+              </p>
+              <p className={`text-xs mt-1 font-semibold ${formData.availability?.availableNow ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {formData.availability?.availableNow ? 'Currently Available' : 'Currently Unavailable'}
+              </p>
             </div>
           </div>
         </div>
@@ -86,7 +100,7 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
           disabled={saving}
           className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 text-gray-800 dark:text-white font-bold py-4 px-6 rounded-xl shadow flex items-center justify-center gap-2 transition-all"
         >
-          <ArrowLeft size={20} />
+          <HiArrowLeft size={20} />
           Back
         </motion.button>
         <motion.button
@@ -103,7 +117,7 @@ function ServiceStepFinish({ formData, onFinish, onBack, saving }) {
             </>
           ) : (
             <>
-              <CheckCircle size={20} />
+              <HiCheckCircle size={20} />
               Finish Setup
             </>
           )}

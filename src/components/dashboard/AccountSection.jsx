@@ -1,3 +1,4 @@
+// src/components/dashboard/AccountSection.jsx
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Camera, Save, Lock } from 'lucide-react'
@@ -38,6 +39,7 @@ function AccountSection() {
     try {
       await updateUserProfile(currentUser.uid, {
         displayName,
+        displayNameLower: displayName.trim().toLowerCase(),
         phone
       })
       

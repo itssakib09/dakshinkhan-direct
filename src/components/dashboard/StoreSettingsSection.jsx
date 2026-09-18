@@ -1,8 +1,11 @@
+// src/components/dashboard/StoreSettingsSection.jsx
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Store, MapPin, Clock, Eye, EyeOff, Save } from 'lucide-react'
+import { HiBadgeCheck, HiClock } from 'react-icons/hi'
 import { useAuth } from '../../context/AuthContext'
 import { updateUserProfile } from '../../services/userService'
+import { serverTimestamp } from 'firebase/firestore'
 import { LOCATIONS, ALL_AREAS_VALUE, ALL_AREAS_LABEL } from '../../data/locations'
 import { BUSINESS_TYPES } from '../../data/businessTypes'
 import { WEEK_DAYS, DAY_LABELS } from '../../data/storeHours'
@@ -13,6 +16,7 @@ function StoreSettingsSection() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [sameHoursEveryday, setSameHoursEveryday] = useState(true)
+  const [requestingVerification, setRequestingVerification] = useState(false)
 
   const [formData, setFormData] = useState({
     storeName: '',
@@ -104,7 +108,10 @@ function StoreSettingsSection() {
 
     try {
       await updateUserProfile(currentUser.uid, {
-        storeSettings: formData
+        storeSettings: {
+          ...formData,
+          storeNameLower: formData.storeName.trim().toLowerCase()
+        }
       })
 
       await refreshUserProfile()
@@ -119,6 +126,26 @@ function StoreSettingsSection() {
     }
   }
 
+  const handleRequestVerification = async () => {
+    setRequestingVerification(true)
+    setError(null)
+
+    try {
+      await updateUserProfile(currentUser.uid, {
+        'storeSettings.verificationRequested': true,
+        'storeSettings.verificationRequestedAt': serverTimestamp(),
+        'storeSettings.verificationRejected': false
+      })
+
+      await refreshUserProfile()
+    } catch (err) {
+      console.error('Error requesting verification:', err)
+      setError('Failed to submit verification request. Please try again.')
+    } finally {
+      setRequestingVerification(false)
+    }
+  }
+
   const getAreaDisplay = () => {
     if (formData.serviceAreas?.includes(ALL_AREAS_VALUE)) {
       return ALL_AREAS_LABEL
@@ -128,6 +155,11 @@ function StoreSettingsSection() {
     }
     return formData.serviceAreas?.join(', ') || 'None selected'
   }
+
+  const isVerified = userProfile?.storeSettings?.verified === true
+  const isVerificationRequested = userProfile?.storeSettings?.verificationRequested === true
+  const isVerificationRejected = userProfile?.storeSettings?.verificationRejected === true
+  const verificationRejectedReason = userProfile?.storeSettings?.verificationRejectedReason || ''
 
   return (
     <div>
@@ -159,6 +191,58 @@ function StoreSettingsSection() {
           Settings saved successfully!
         </motion.div>
       )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-6"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <HiBadgeCheck className="text-primary-600 dark:text-primary-400" size={20} />
+          <h3 className="font-black text-lg text-gray-900 dark:text-white">Verification</h3>
+        </div>
+
+        {isVerified ? (
+          <span className="inline-flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full px-4 py-2 text-sm font-bold">
+            <HiBadgeCheck size={16} />
+            Verified
+          </span>
+        ) : isVerificationRequested ? (
+          <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full px-4 py-2 text-sm font-bold">
+            <HiClock size={16} />
+            Verification Pending
+          </span>
+        ) : isVerificationRejected ? (
+          <div>
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 mb-3">
+              <p className="font-bold text-sm mb-1">Verification request declined</p>
+              <p className="text-sm">{verificationRejectedReason || 'No reason provided'}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRequestVerification}
+              disabled={requestingVerification}
+              className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+            >
+              {requestingVerification ? 'Submitting...' : 'Request Verification Again'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              Get a verified badge to build customer trust
+            </p>
+            <button
+              type="button"
+              onClick={handleRequestVerification}
+              disabled={requestingVerification}
+              className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+            >
+              {requestingVerification ? 'Submitting...' : 'Request Verification'}
+            </button>
+          </div>
+        )}
+      </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <motion.div
